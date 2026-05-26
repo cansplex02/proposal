@@ -1,0 +1,806 @@
+/* ============================================================
+   Market · Why Content · AI Principle (신뢰도 비교)
+   PC 우선 레이아웃 → 모바일/태블릿 재구성
+   ============================================================ */
+
+@media (max-width: 1200px) {
+  .proposal-page .market > *,
+  .proposal-page .ai-principle > * {
+    padding-left: var(--page-gutter) !important;
+    padding-right: var(--page-gutter) !important;
+  }
+
+  .proposal-page .ai-groups {
+    grid-template-columns: 1fr !important;
+    gap: 20px;
+  }
+
+  .proposal-page .ai-group.ai .ai-group-inner {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .proposal-page .market,
+  .proposal-page .why-content,
+  .proposal-page .ai-principle {
+    padding-top: 80px !important;
+    padding-bottom: 80px !important;
+  }
+
+  .proposal-page .market > *,
+  .proposal-page .ai-principle > * {
+    padding-left: var(--page-gutter) !important;
+    padding-right: var(--page-gutter) !important;
+  }
+
+  .proposal-page .why-content {
+    padding: 80px var(--page-gutter) !important;
+    max-width: 100% !important;
+  }
+
+  .proposal-page .why-diagram {
+    padding: 0 !important;
+    max-width: 100%;
+    margin-bottom: 48px !important;
+  }
+
+  /* 검색 + AI 카드 그룹: 세로 스택 */
+  .proposal-page .ai-groups {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+    margin-top: 40px !important;
+  }
+
+  .proposal-page .ai-group {
+    padding: 24px 20px !important;
+    border-radius: 24px !important;
+  }
+
+  .proposal-page .ai-group.ai .ai-group-inner {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .proposal-page .ai-groups .ai-card {
+    aspect-ratio: auto !important;
+    min-height: 0 !important;
+  }
+
+  .proposal-page .ai-groups .ai-card-name {
+    font-size: 17px !important;
+  }
+
+  .proposal-page .ai-group.search .ai-card {
+    min-height: 160px !important;
+  }
+
+  .proposal-page .ai-group.search .ai-card-name {
+    font-size: 22px !important;
+  }
+
+  /* 네이버 설명 박스 */
+  .proposal-page .naver-explain {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: unset !important;
+    gap: 20px !important;
+    padding: 28px 24px !important;
+    text-align: center !important;
+    align-items: center !important;
+    margin-bottom: 48px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .proposal-page .naver-explain-label {
+    white-space: normal !important;
+    font-size: 16px !important;
+  }
+
+  .proposal-page .naver-explain-label::after {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .proposal-page .naver-explain-body {
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+  }
+
+  .proposal-page .naver-explain-date {
+    white-space: normal !important;
+    width: 100%;
+    max-width: 200px;
+  }
+
+  /* Why Content 다이어그램 */
+  .proposal-page .why-result-nodes {
+    max-width: 100% !important;
+    gap: 16px !important;
+  }
+
+  .proposal-page .why-flow-arrows {
+    height: 48px !important;
+    margin-top: 0 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .proposal-page .channels-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* 신뢰도 비교 — 세로 스택 */
+  .proposal-page .trust-compare {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    max-width: 100% !important;
+    margin: 48px auto 64px !important;
+    padding: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .proposal-page .trust-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .proposal-page .trust-vs {
+    padding: 4px 0 !important;
+  }
+
+  .proposal-page .trust-card-quote {
+    min-height: 0 !important;
+    font-size: clamp(15px, 3.8vw, 18px) !important;
+    line-height: 1.55 !important;
+    padding: 0 4px;
+  }
+}
+
+@media (max-width: 768px) {
+  .proposal-page .market,
+  .proposal-page .why-content,
+  .proposal-page .ai-principle {
+    padding-top: 64px !important;
+    padding-bottom: 64px !important;
+  }
+
+  .proposal-page .market .section-headline,
+  .proposal-page .why-content .section-headline,
+  .proposal-page .ai-principle .section-headline {
+    font-size: clamp(26px, 7.5vw, 36px) !important;
+    line-height: 1.22 !important;
+    margin-bottom: 20px !important;
+    letter-spacing: -0.03em;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  .proposal-page .market .section-subtext,
+  .proposal-page .why-content .section-subtext,
+  .proposal-page .ai-principle .section-subtext {
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+    margin-bottom: 40px !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .proposal-page .section-tag-center {
+    margin-bottom: 20px !important;
+    font-size: 10px !important;
+  }
+
+  /* AI 카드 그룹 — 2열 */
+  .proposal-page .ai-group-header {
+    text-align: center;
+    margin-bottom: 20px !important;
+    padding-bottom: 16px !important;
+  }
+
+  .proposal-page .ai-group-flow {
+    font-size: 17px !important;
+    line-height: 1.45 !important;
+  }
+
+  .proposal-page .ai-group.ai .ai-group-inner {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .proposal-page .ai-groups .ai-card {
+    padding: 14px 12px !important;
+    border-radius: 16px !important;
+  }
+
+  .proposal-page .ai-groups .ai-card-logo {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 10px !important;
+  }
+
+  .proposal-page .ai-groups .ai-card-logo svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .proposal-page .ai-groups .ai-card-name {
+    font-size: 14px !important;
+  }
+
+  .proposal-page .ai-group.search .ai-card-name {
+    font-size: 20px !important;
+  }
+
+  /* Why Content */
+  .proposal-page .why-result-nodes {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin-bottom: 24px !important;
+  }
+
+  .proposal-page .why-result-node {
+    padding: 22px 18px !important;
+    border-radius: 18px !important;
+  }
+
+  .proposal-page .why-result-node-text {
+    font-size: 14px !important;
+  }
+
+  /* 복잡한 SVG 화살표 — 모바일에서 숨김 (채널 그리드와 겹침 방지) */
+  .proposal-page .why-flow-arrows {
+    display: none !important;
+  }
+
+  .proposal-page .channels-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .proposal-page .channel-card {
+    padding: 14px 10px !important;
+    border-radius: 12px !important;
+  }
+
+  .proposal-page .channel-card-icon {
+    width: 32px !important;
+    height: 32px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .proposal-page .channel-card-name {
+    font-size: 11px !important;
+    line-height: 1.3;
+  }
+
+  .proposal-page .channel-card-tag {
+    font-size: 9px !important;
+  }
+
+  /* 신뢰도 비교 카드 */
+  .proposal-page .trust-compare {
+    margin: 40px auto 48px !important;
+    gap: 14px !important;
+  }
+
+  .proposal-page .trust-card {
+    padding: 24px 18px !important;
+    border-radius: 18px !important;
+  }
+
+  .proposal-page .trust-card-label {
+    font-size: 10px !important;
+    margin-bottom: 16px !important;
+    padding: 5px 12px !important;
+  }
+
+  .proposal-page .trust-card-icon {
+    width: 48px !important;
+    height: 48px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .proposal-page .trust-card-icon svg {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .proposal-page .trust-card-quote {
+    font-size: clamp(15px, 4.2vw, 17px) !important;
+    min-height: 0 !important;
+    margin-bottom: 16px !important;
+    line-height: 1.6 !important;
+  }
+
+  .proposal-page .trust-card-result {
+    font-size: 12px !important;
+    padding-top: 14px !important;
+  }
+
+  .proposal-page .trust-card-result strong {
+    font-size: 17px !important;
+    margin-top: 6px !important;
+  }
+
+  .proposal-page .trust-vs-circle {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 11px !important;
+  }
+
+  .proposal-page .ai-principle .ai-flow {
+    margin: 32px auto 40px !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .proposal-page .ai-group.ai .ai-group-inner {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .proposal-page .channels-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .proposal-page .market .section-headline,
+  .proposal-page .why-content .section-headline {
+    font-size: clamp(24px, 7vw, 30px) !important;
+  }
+
+  .proposal-page .trust-card-quote br {
+    display: inline;
+  }
+}
+
+/* ============================================================
+   How We — 4가지 강점 다이어그램 (01~04)
+   ============================================================ */
+
+@media (max-width: 1024px) {
+  .proposal-page .how-we {
+    padding: 80px var(--page-gutter) !important;
+    max-width: 100% !important;
+  }
+
+  .proposal-page .strengths-diagram {
+    margin-top: 48px !important;
+    max-width: 100% !important;
+  }
+
+  .proposal-page .strengths-cards {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 14px !important;
+  }
+
+  .proposal-page .strength-card {
+    padding: 24px 18px !important;
+  }
+
+  .proposal-page .strength-card-title {
+    font-size: 16px !important;
+  }
+
+  .proposal-page .strengths-arrows {
+    height: 56px !important;
+  }
+
+  .proposal-page .strengths-result {
+    padding: 32px 28px !important;
+    max-width: 100% !important;
+  }
+
+  .proposal-page .strengths-result-text {
+    font-size: clamp(22px, 4vw, 30px) !important;
+  }
+
+  .proposal-page .we-numbers {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .proposal-page .we-num-value {
+    font-size: clamp(36px, 8vw, 56px) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .proposal-page .how-we {
+    padding: 64px var(--page-gutter) !important;
+  }
+
+  .proposal-page .how-we .section-headline {
+    font-size: clamp(26px, 7.5vw, 36px) !important;
+    margin-bottom: 16px !important;
+  }
+
+  .proposal-page .how-we .section-subtext {
+    font-size: 14px !important;
+    line-height: 1.65 !important;
+    margin-bottom: 32px !important;
+    max-width: 100% !important;
+  }
+
+  /* 4개 카드 → 세로 플로우 (01↓02↓03↓04) */
+  .proposal-page .strengths-diagram {
+    margin-top: 32px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+
+  .proposal-page .strengths-cards {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    width: 100% !important;
+  }
+
+  .proposal-page .strength-card {
+    display: grid !important;
+    grid-template-columns: 44px 1fr !important;
+    grid-template-areas:
+      "num icon"
+      "title title"
+      "body body" !important;
+    column-gap: 12px !important;
+    row-gap: 6px !important;
+    text-align: left !important;
+    padding: 18px 16px !important;
+    border-radius: 16px !important;
+    margin-bottom: 28px !important;
+    position: relative !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .proposal-page .strength-card::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -20px;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 16px;
+    background: linear-gradient(180deg, var(--blue, #2b5cd9), transparent);
+    opacity: 0.45;
+  }
+
+  .proposal-page .strength-card:last-child::after {
+    display: none !important;
+  }
+
+  .proposal-page .strength-card-num {
+    grid-area: num;
+    align-self: start;
+    margin: 0 !important;
+    font-size: 10px !important;
+    padding: 6px 8px;
+    background: var(--blue-bg, #f6f9ff);
+    border-radius: 8px;
+    width: fit-content;
+  }
+
+  .proposal-page .strength-card-icon {
+    grid-area: icon;
+    width: 44px !important;
+    height: 44px !important;
+    margin: 0 !important;
+    border-radius: 12px !important;
+  }
+
+  .proposal-page .strength-card-icon svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .proposal-page .strength-card-title {
+    grid-area: title;
+    font-size: 15px !important;
+    margin-bottom: 0 !important;
+    line-height: 1.35 !important;
+    padding-top: 2px;
+  }
+
+  .proposal-page .strength-card-body {
+    grid-area: body;
+    font-size: 13px !important;
+    line-height: 1.55 !important;
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line, #e4e8f1);
+  }
+
+  /* PC용 모이는 화살표 SVG 숨김 */
+  .proposal-page .strengths-arrows {
+    display: none !important;
+  }
+
+  .proposal-page .strengths-result {
+    margin-top: 8px !important;
+    padding: 28px 22px !important;
+    border-radius: 20px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .proposal-page .strengths-result-text {
+    font-size: clamp(20px, 5.5vw, 26px) !important;
+    line-height: 1.4 !important;
+  }
+
+  /* We 숫자 카드 */
+  .proposal-page .we-numbers {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  .proposal-page .we-num-card {
+    padding: 20px 14px !important;
+  }
+
+  .proposal-page .we-num-value {
+    font-size: clamp(32px, 9vw, 44px) !important;
+  }
+
+  .proposal-page .we-num-label {
+    font-size: 12px !important;
+    line-height: 1.35;
+    word-break: keep-all;
+  }
+}
+
+@media (max-width: 480px) {
+  .proposal-page .we-numbers {
+    grid-template-columns: 1fr !important;
+  }
+
+  .proposal-page .we-num-label {
+    font-size: 13px !important;
+  }
+}
+
+/* ============================================================
+   Method Steps 01~04 — 병원분석 · 찾기 · 설계 · 제작 및 배포
+   ============================================================ */
+
+@media (max-width: 1024px) {
+  .proposal-page .method-step-grid,
+  .proposal-page .method-step-grid.reverse {
+    gap: 32px !important;
+  }
+
+  .proposal-page .method-step-visual:not(.method-step-visual--journey) {
+    min-height: clamp(320px, 75vw, 420px) !important;
+    aspect-ratio: 1 / 1 !important;
+    padding: 20px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .proposal-page .method-step-visual--journey {
+    aspect-ratio: 440 / 320 !important;
+    min-height: 0 !important;
+    padding: 16px !important;
+  }
+
+  .proposal-page .method-step-visual svg.method-diagram:not(.method-diagram--journey) {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    flex: 1 1 auto !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .proposal-page .method-step-section,
+  .proposal-page .method-step-section.alt {
+    padding-left: var(--page-gutter) !important;
+    padding-right: var(--page-gutter) !important;
+  }
+
+  .proposal-page .method-step-grid,
+  .proposal-page .method-step-grid.reverse {
+    gap: 28px !important;
+  }
+
+  .proposal-page .method-step-visual:not(.method-step-visual--journey) {
+    min-height: min(420px, 92vw) !important;
+    aspect-ratio: 1 / 1 !important;
+    padding: 16px !important;
+    border-radius: 20px !important;
+  }
+
+  .proposal-page .method-step-visual svg.method-diagram:not(.method-diagram--journey) {
+    width: 100% !important;
+    height: 100% !important;
+    transform: none !important;
+  }
+
+  .proposal-page .method-step-bignum {
+    font-size: clamp(48px, 14vw, 72px) !important;
+  }
+
+  .proposal-page .method-step-title {
+    font-size: clamp(22px, 6vw, 28px) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .proposal-page .method-step-visual:not(.method-step-visual--journey) {
+    min-height: min(380px, 95vw) !important;
+    padding: 14px !important;
+  }
+
+  .proposal-page #method-03 .method-step-visual--journey {
+    min-height: 520px !important;
+  }
+}
+
+/* ============================================================
+   설계 · 환자 여정 — 가로(PC) / 세로(모바일) 전환
+   ============================================================ */
+
+.proposal-page .method-diagram--journey-vertical {
+  display: none;
+}
+
+.proposal-page .method-step-visual--journey {
+  aspect-ratio: 440 / 320;
+  min-height: 0;
+  overflow: visible;
+}
+
+.proposal-page .method-diagram--journey-horizontal {
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 900px) {
+  .proposal-page .method-diagram--journey-horizontal {
+    display: none !important;
+  }
+
+  .proposal-page .method-diagram--journey-vertical {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-width: 300px !important;
+    margin: 0 auto !important;
+    flex: 0 0 auto !important;
+  }
+
+  .proposal-page #method-03 .method-step-visual--journey,
+  .proposal-page .method-step-visual--journey {
+    aspect-ratio: auto !important;
+    min-height: clamp(520px, 125vw, 600px) !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 20px 16px !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+}
+
+/* 데스크톱 2열: 비주얼 열 최소 너비 확보 */
+@media (min-width: 1025px) {
+  .proposal-page .method-step-visual {
+    min-height: 400px;
+    max-height: 520px;
+  }
+
+  .proposal-page .method-step-grid {
+    align-items: stretch;
+  }
+
+  .proposal-page .method-step-visual svg.method-diagram {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* ============================================================
+   Naver Place · 도넛 + 목업 (모바일 1열 스택)
+   ============================================================ */
+
+@media (max-width: 1024px) {
+  .proposal-page .place {
+    padding: 80px var(--page-gutter) !important;
+    max-width: 100% !important;
+  }
+
+  .proposal-page .place-stats {
+    padding: 0 !important;
+    margin-top: 48px !important;
+    margin-bottom: 24px !important;
+    gap: 24px !important;
+  }
+
+  .proposal-page .place-source {
+    padding: 0 var(--page-gutter) !important;
+    max-width: 100% !important;
+  }
+
+  .proposal-page .place-stat-donut,
+  .proposal-page .place-mockup {
+    padding: 32px 24px !important;
+    min-width: 0 !important;
+  }
+
+  .proposal-page .place-mockup {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .proposal-page .place-stats {
+    grid-template-columns: 1fr !important;
+    align-items: stretch !important;
+  }
+
+  .proposal-page .place-stat-donut,
+  .proposal-page .place-mockup {
+    width: 100% !important;
+  }
+
+  .proposal-page .place-mockup-label {
+    display: block !important;
+    visibility: visible !important;
+    margin-bottom: 20px !important;
+  }
+
+  .proposal-page .place-mockup-frame {
+    overflow-x: visible !important;
+    width: 100% !important;
+  }
+
+  .proposal-page .place-stat-donut:hover,
+  .proposal-page .place-mockup:hover {
+    transform: none !important;
+  }
+
+  .proposal-page .place-donut-chart {
+    width: min(260px, 72vw) !important;
+    height: min(260px, 72vw) !important;
+  }
+
+  .proposal-page .place-donut-legend {
+    gap: 14px 20px !important;
+  }
+
+  .proposal-page .place-mockup-search-text {
+    font-size: 13px !important;
+    white-space: normal !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .proposal-page .place {
+    padding: 64px var(--page-gutter) !important;
+  }
+
+  .proposal-page .place-stats {
+    gap: 20px !important;
+    margin-top: 40px !important;
+  }
+
+  .proposal-page .place-stat-donut,
+  .proposal-page .place-mockup {
+    padding: 24px 16px !important;
+    border-radius: 20px !important;
+  }
+
+  .proposal-page .place-donut-label,
+  .proposal-page .place-mockup-label {
+    font-size: 10px !important;
+    margin-bottom: 20px !important;
+  }
+}

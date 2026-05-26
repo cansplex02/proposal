@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import ResponsiveEnhancer from "@/components/ResponsiveEnhancer";
 
 type LegacyHtmlPageProps = {
   html: string;
@@ -18,7 +19,10 @@ export default function LegacyHtmlPage({
   useEffect(() => {
     if (!script?.trim()) return;
 
+    let cancelled = false;
+
     const run = () => {
+      if (cancelled) return;
       try {
         const fn = new Function(script);
         fn();
@@ -28,14 +32,24 @@ export default function LegacyHtmlPage({
     };
 
     const id = window.requestAnimationFrame(run);
-    return () => window.cancelAnimationFrame(id);
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(id);
+      const teardown = (
+        window as Window & { __proposalScrollTeardown?: () => void }
+      ).__proposalScrollTeardown;
+      if (teardown) teardown();
+    };
   }, [script]);
 
   return (
-    <div
-      ref={containerRef}
-      className={className}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    <>
+      <ResponsiveEnhancer />
+      <div
+        ref={containerRef}
+        className={className}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    </>
   );
 }

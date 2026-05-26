@@ -19,27 +19,11 @@
   /* 부드러운 스크롤 + 휠 1회 = 섹션 1단계 이동 (JS로 제어) */
   html {
     scroll-behavior: smooth;
-    scroll-padding-top: 72px; /* fixed nav 높이 보정 */
+    scroll-padding-top: 72px; /* fixed nav · 앵커 링크 보정 */
   }
-  /* 키보드 PageUp/Down 등도 자연스럽게 정렬되도록 보조 스냅 사용 */
-  section.section,
-  section.cta-section,
-  section.method-step-section,
-  section.hero {
-    scroll-snap-align: start;
-  }
-  html.section-snap { scroll-snap-type: y proximity; }
 
-  /* 프린트나 모션 감소 사용자에겐 비활성화 */
   @media (prefers-reduced-motion: reduce) {
-    html { scroll-snap-type: none; scroll-behavior: auto; }
-  }
-  @media print {
-    html { scroll-snap-type: none; }
-  }
-  /* 모바일에서는 스냅 끄기 (작은 화면에선 어색함) */
-  @media (max-width: 768px) {
-    html { scroll-snap-type: none; }
+    html { scroll-behavior: auto; }
   }
 
   body {
@@ -979,7 +963,8 @@
 
   /* 비주얼 영역 (이미지/다이어그램) */
   .method-step-visual {
-    aspect-ratio: 4 / 3.2;
+    aspect-ratio: 1 / 1;
+    min-height: 380px;
     background: #fff;
     border-radius: 28px;
     border: 1px solid var(--line);
@@ -988,14 +973,21 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
   }
   .method-step-section.alt .method-step-visual {
     background: #fff;
   }
 
-  .method-step-visual svg {
-    width: 92%;
-    height: 92%;
+  .method-step-visual svg,
+  .method-step-visual .method-diagram {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    flex: 1 1 auto;
+    display: block;
   }
 
   /* 04 사진 placeholder */
@@ -4141,7 +4133,6 @@
   }
   @media (max-width: 768px) {
     .nav { padding: 14px 20px; }
-    .nav-menu a:not(.print) { display: none; }
     .hero { padding: 100px 24px 60px; }
     .hero-headline { font-size: 48px; }
     .hero-stats {
@@ -4154,7 +4145,7 @@
     .section-headline { font-size: 40px; }
     .market-flow { flex-direction: column; gap: 16px; }
     .ai-grid { grid-template-columns: repeat(2, 1fr); }
-    .naver-explain { grid-template-columns: 1fr; gap: 16px; padding: 24px; }
+    /* market · why · trust 모바일 → responsive-proposal-sections.css */
     .conclusion-line { font-size: 36px; }
     .next-headline { font-size: 44px; }
     .about-grid, .we-numbers, .we-strengths, .next-actions {

@@ -1,7 +1,5 @@
 document.documentElement.classList.add('js-anim');
 
-document.documentElement.classList.add('js-anim');
-
 // ===== AI 검색결과 — 영상처럼 재생되는 시퀀스 =====
   (function() {
     var caseBlocks = document.querySelectorAll('.case-block');
@@ -95,84 +93,129 @@ document.documentElement.classList.add('js-anim');
     cards.forEach(function(c) { io.observe(c); });
   })();
 
-  // ===== 휠 1회 = 섹션 1단계 이동 =====
+  // ===== 휠 1회 = 정지점 1단계 ([data-wheel-stop] · C안 히스테리시스) =====
   (function() {
-    // 모바일/태블릿/모션감소 사용자 제외
     if (window.matchMedia('(max-width: 768px)').matches) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    var sections = Array.prototype.slice.call(
-      document.querySelectorAll('section.hero, section.section, section.cta-section, section.method-step-section')
-    );
-    if (sections.length < 2) return;
-
-    document.documentElement.classList.add('section-snap');
-
-    var NAV_OFFSET = 72;           // fixed nav 보정
-    var COOLDOWN   = 850;          // 한 번 이동 후 휠 잠금 시간 (smooth 스크롤 완료까지)
-    var EDGE_TOL   = 6;            // 섹션 끝/시작 판정 허용오차(px)
-    var WHEEL_MIN  = 8;            // 무시할 잔진동 임계값
-
+    var NAV_OFFSET = 72;
+    var HYST = 48;
+    var WHEEL_GESTURE_MIN = 55;
+    var WHEEL_NOISE = 4;
+    var UNLOCK_MS = 420;
     var isLocked = false;
-    var lastTime = 0;
+    var wheelAccum = 0;
+    var stops = [];
 
-    function getSectionTops() {
-      // 매번 새로 계산 (반응형/리사이즈 대비)
-      return sections.map(function(s) {
-        return Math.max(0, Math.round(s.getBoundingClientRect().top + window.pageYOffset - NAV_OFFSET));
+    function getScrollAnchor(el) {
+      var mode = (el.getAttribute('data-wheel-stop') || 'section').toLowerCase();
+      if (mode === 'inner' || mode === 'point') return el;
+      var section = el.closest('section');
+      return section || el;
+    }
+
+    function getScrollTopForElement(el) {
+      var anchor = getScrollAnchor(el);
+      var rect = anchor.getBoundingClientRect();
+      return Math.max(0, Math.round(rect.top + window.pageYOffset - NAV_OFFSET));
+    }
+
+    function collectStops() {
+      var nodes = Array.prototype.slice.call(document.querySelectorAll('[data-wheel-stop]'));
+      var filtered = [];
+      var lastTop = -99999;
+      nodes.forEach(function(node) {
+        var top = getScrollTopForElement(node);
+        if (Math.abs(top - lastTop) > 40) {
+          filtered.push(node);
+          lastTop = top;
+        }
+      });
+      return filtered;
+    }
+
+    function getStopTops(list) {
+      return list.map(function(el) {
+        return getScrollTopForElement(el);
       });
     }
 
-    function currentIndex(tops) {
-      var y = window.pageYOffset;
+    function nearestIndex(tops) {
+      var anchor = window.pageYOffset + NAV_OFFSET + 8;
       var idx = 0;
+      var best = Infinity;
       for (var i = 0; i < tops.length; i++) {
-        if (y + 2 >= tops[i]) idx = i;
-        else break;
+        var dist = Math.abs(anchor - tops[i]);
+        if (dist < best) {
+          best = dist;
+          idx = i;
+        }
       }
       return idx;
     }
 
-    function scrollToIndex(i) {
-      var tops = getSectionTops();
-      i = Math.max(0, Math.min(tops.length - 1, i));
-      isLocked = true;
-      lastTime = Date.now();
-      window.scrollTo({ top: tops[i], behavior: 'smooth' });
-      setTimeout(function() { isLocked = false; }, COOLDOWN);
-    }
+    function zoneState(idx, tops, viewportH) {
+      var zoneTop = tops[idx];
+      var zoneEnd = idx < tops.length - 1 ? tops[idx + 1] : document.documentElement.scrollHeight;
+      var zoneHeight = zoneEnd - zoneTop;
+      var y = window.pageYOffset;
 
-    window.addEventListener('wheel', function(e) {
-      // Ctrl+휠(확대) 무시
-      if (e.ctrlKey) return;
-      if (Math.abs(e.deltaY) < WHEEL_MIN) return;
-      if (isLocked) { e.preventDefault(); return; }
-
-      var tops = getSectionTops();
-      var idx  = currentIndex(tops);
-      var sec  = sections[idx];
-      var rect = sec.getBoundingClientRect();
-      var viewportH = window.innerHeight;
-      // 현재 섹션이 뷰포트보다 길면 "안에서 자유 스크롤" 허용
-      var sectionH = rect.height;
-      var atTop    = rect.top >= -EDGE_TOL;                       // 섹션 상단이 뷰포트 위쪽 근처
-      var atBottom = (rect.bottom - viewportH) <= EDGE_TOL;        // 섹션 하단이 뷰포트 바닥 근처
-
-      var goingDown = e.deltaY > 0;
-
-      if (sectionH > viewportH + 4) {
-        // 긴 섹션 — 안에서 스크롤할 여지가 있으면 native 스크롤 유지
-        if (goingDown && !atBottom) return;        // 더 내릴 공간 있음
-        if (!goingDown && !atTop) return;          // 더 올릴 공간 있음
+      if (zoneHeight <= viewportH + 8) {
+        return { long: false, atTop: true, atBottom: true };
       }
 
-      // 짧은 섹션이거나 가장자리에 도달 → 다음/이전 섹션으로 점프
+      return {
+        long: true,
+        atTop: y <= zoneTop + HYST,
+        atBottom: y + viewportH >= zoneEnd - HYST
+      };
+    }
+
+    function scrollToIndex(i) {
+      var tops = getStopTops(stops);
+      i = Math.max(0, Math.min(tops.length - 1, i));
+      var targetTop = tops[i];
+      isLocked = true;
+      wheelAccum = 0;
+      window.scrollTo({ top: targetTop, behavior: 'auto' });
+
+      window.setTimeout(function() {
+        if (Math.abs(window.pageYOffset - targetTop) > 10) {
+          window.scrollTo({ top: targetTop, behavior: 'auto' });
+        }
+        isLocked = false;
+      }, UNLOCK_MS);
+    }
+
+    function onWheel(e) {
+      if (e.ctrlKey) return;
+      if (Math.abs(e.deltaY) < WHEEL_NOISE) return;
+      if (isLocked) {
+        e.preventDefault();
+        return;
+      }
+
+      wheelAccum += e.deltaY;
+      if (Math.abs(wheelAccum) < WHEEL_GESTURE_MIN) return;
+
+      var tops = getStopTops(stops);
+      var idx = nearestIndex(tops);
+      var viewportH = window.innerHeight;
+      var goingDown = wheelAccum > 0;
+      wheelAccum = 0;
+
+      var zone = zoneState(idx, tops, viewportH);
+
+      if (zone.long) {
+        if (goingDown && !zone.atBottom) return;
+        if (!goingDown && !zone.atTop) return;
+      }
+
       e.preventDefault();
       scrollToIndex(idx + (goingDown ? 1 : -1));
-    }, { passive: false });
+    }
 
-    // 키보드 PageDown/PageUp/Space/Arrow 도 같은 방식으로
-    window.addEventListener('keydown', function(e) {
+    function onKeydown(e) {
       if (isLocked) return;
       var target = e.target;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
@@ -181,11 +224,33 @@ document.documentElement.classList.add('js-anim');
       if (e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) dir = 1;
       else if (e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) dir = -1;
       else if (e.key === 'ArrowDown' && e.altKey) dir = 1;
-      else if (e.key === 'ArrowUp'   && e.altKey) dir = -1;
+      else if (e.key === 'ArrowUp' && e.altKey) dir = -1;
       else return;
 
       e.preventDefault();
-      var tops = getSectionTops();
-      scrollToIndex(currentIndex(tops) + dir);
-    });
+      wheelAccum = 0;
+      scrollToIndex(nearestIndex(getStopTops(stops)) + dir);
+    }
+
+    function onResize() {
+      stops = collectStops();
+      wheelAccum = 0;
+    }
+
+    function teardown() {
+      window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('keydown', onKeydown);
+      window.removeEventListener('resize', onResize);
+    }
+
+    stops = collectStops();
+    if (stops.length < 2) return;
+
+    if (window.__proposalScrollTeardown) {
+      window.__proposalScrollTeardown();
+    }
+    window.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('keydown', onKeydown);
+    window.addEventListener('resize', onResize);
+    window.__proposalScrollTeardown = teardown;
   })();

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import LegacyHtmlPage from "@/components/LegacyHtmlPage";
 import { loadHtmlFile } from "@/lib/loadContent";
 import "@/styles/analysis.css";
+import "@/styles/responsive.css";
 
 export const metadata: Metadata = {
   title: "CANSPLEX · 경쟁분석 결과",
@@ -10,5 +11,5 @@ export const metadata: Metadata = {
 
 export default function AnalysisPage() {
   const html = loadHtmlFile("analysis-body.html");
-  return <LegacyHtmlPage html={html} />;
+  return <LegacyHtmlPage html={html} className="analysis-page" />;
 }
