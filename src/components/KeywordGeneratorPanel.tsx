@@ -17,6 +17,8 @@ type ShareStateV1 = {
   hasGenerated: boolean;
 };
 
+const LAST_STATE_STORAGE_KEY = "cansplex.analysis.keywordTool.lastState.v1";
+
 export default function KeywordGeneratorPanel() {
   const [specialty, setSpecialty] = useState("");
   const [location, setLocation] = useState("");
@@ -88,6 +90,56 @@ export default function KeywordGeneratorPanel() {
     window.history.replaceState(null, "", nextUrl);
   }
 
+  function trySaveLastState(next: ShareStateV1) {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(LAST_STATE_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // ignore storage errors (quota, privacy mode, etc.)
+    }
+  }
+
+  function tryLoadLastState(): ShareStateV1 | null {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.localStorage.getItem(LAST_STATE_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as Partial<ShareStateV1> | null;
+      if (!parsed || parsed.v !== 1) return null;
+      const mode =
+        parsed.treatmentMode === "surgery" || parsed.treatmentMode === "nonsurgery"
+          ? parsed.treatmentMode
+          : "nonsurgery";
+      const specialtySafe = String(parsed.specialty || "");
+      const regionsSafe = String(parsed.editedRegions || "");
+      const has =
+        Boolean(parsed.hasGenerated) &&
+        Boolean(specialtySafe.trim()) &&
+        Boolean(regionsSafe.trim());
+      return {
+        v: 1,
+        specialty: specialtySafe,
+        location: String(parsed.location || ""),
+        topicsText: String(parsed.topicsText || ""),
+        treatmentMode: mode,
+        resolvedAddress: String(parsed.resolvedAddress || ""),
+        editedRegions: regionsSafe,
+        hasGenerated: has,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function clearLastState() {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.removeItem(LAST_STATE_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+  }
+
   function buildResult(
     spec: string,
     regionsRaw: string,
@@ -147,7 +199,8 @@ export default function KeywordGeneratorPanel() {
   // URL → state (first load)
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const parsed = parseShareState(window.location.search);
+    const parsed =
+      parseShareState(window.location.search) ?? tryLoadLastState();
     if (!parsed) return;
 
     setSpecialty(parsed.specialty);
@@ -168,6 +221,9 @@ export default function KeywordGeneratorPanel() {
         )
       );
     }
+
+    // 쿼리가 없더라도, 마지막 상태로 바로 공유 가능한 URL로 맞춰 둠
+    writeUrlFromState(parsed);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -175,7 +231,9 @@ export default function KeywordGeneratorPanel() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!hasGenerated) return;
-    writeUrlFromState(toShareState());
+    const next = toShareState();
+    writeUrlFromState(next);
+    trySaveLastState(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     specialty,
@@ -229,6 +287,16 @@ export default function KeywordGeneratorPanel() {
         editedRegions: regionsStr,
         hasGenerated: true,
       });
+      trySaveLastState({
+        v: 1,
+        specialty,
+        location,
+        topicsText,
+        treatmentMode,
+        resolvedAddress: addr,
+        editedRegions: regionsStr,
+        hasGenerated: true,
+      });
     } catch {
       setError("키워드 생성 중 오류가 발생했습니다.");
     } finally {
@@ -246,6 +314,7 @@ export default function KeywordGeneratorPanel() {
     setHasGenerated(false);
     setResult(null);
     setError("");
+    clearLastState();
 
     if (typeof window !== "undefined") {
       window.history.replaceState(
