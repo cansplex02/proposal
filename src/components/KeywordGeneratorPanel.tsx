@@ -99,38 +99,6 @@ export default function KeywordGeneratorPanel() {
     }
   }
 
-  function tryLoadLastState(): ShareStateV1 | null {
-    if (typeof window === "undefined") return null;
-    try {
-      const raw = window.localStorage.getItem(LAST_STATE_STORAGE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as Partial<ShareStateV1> | null;
-      if (!parsed || parsed.v !== 1) return null;
-      const mode =
-        parsed.treatmentMode === "surgery" || parsed.treatmentMode === "nonsurgery"
-          ? parsed.treatmentMode
-          : "nonsurgery";
-      const specialtySafe = String(parsed.specialty || "");
-      const regionsSafe = String(parsed.editedRegions || "");
-      const has =
-        Boolean(parsed.hasGenerated) &&
-        Boolean(specialtySafe.trim()) &&
-        Boolean(regionsSafe.trim());
-      return {
-        v: 1,
-        specialty: specialtySafe,
-        location: String(parsed.location || ""),
-        topicsText: String(parsed.topicsText || ""),
-        treatmentMode: mode,
-        resolvedAddress: String(parsed.resolvedAddress || ""),
-        editedRegions: regionsSafe,
-        hasGenerated: has,
-      };
-    } catch {
-      return null;
-    }
-  }
-
   function clearLastState() {
     if (typeof window === "undefined") return;
     try {
@@ -199,8 +167,7 @@ export default function KeywordGeneratorPanel() {
   // URL → state (first load)
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const parsed =
-      parseShareState(window.location.search) ?? tryLoadLastState();
+    const parsed = parseShareState(window.location.search);
     if (!parsed) return;
 
     setSpecialty(parsed.specialty);
@@ -221,9 +188,6 @@ export default function KeywordGeneratorPanel() {
         )
       );
     }
-
-    // 쿼리가 없더라도, 마지막 상태로 바로 공유 가능한 URL로 맞춰 둠
-    writeUrlFromState(parsed);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
