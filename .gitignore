@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# 365 API 명세 (키 포함 시 커밋하지 마세요)
+data/sbiz365-api-spec.json
+
 # vercel
 .vercel
 

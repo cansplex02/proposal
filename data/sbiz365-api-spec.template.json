@@ -1,0 +1,39 @@
+{
+  "_comment": "소상공인365에서 발급받은 API 명세를 API마다 아래 형식으로 채워 주세요. 완성본은 sbiz365-api-spec.json 으로 저장합니다.",
+
+  "apiKey": "마이페이지에서 확인한 인증키 (또는 .env의 SBIZ365_API_KEY 사용)",
+  "baseUrl": "https://bigdata.sbiz.or.kr",
+
+  "apis": {
+    "marketMap": {
+      "name": "상권지도",
+      "description": "분석 페이지 '상권 지도/주변시설' 영역에 사용 예정",
+      "method": "GET",
+      "path": "/여기에_명세서의_URL_경로",
+      "queryParams": {
+        "serviceKey": "인증키 파라미터명 (예: serviceKey)",
+        "lat": "위도 파라미터명",
+        "lng": "경도 파라미터명",
+        "radius": "반경(m) 파라미터명",
+        "type": "json"
+      },
+      "sampleResponse": "명세서 샘플 JSON 또는 실제 호출 결과 일부를 붙여넣기"
+    },
+    "simpleAnalysis": {
+      "name": "간단분석",
+      "description": "요약 카드·미니 인사이트 등 간단 지표",
+      "method": "GET",
+      "path": "/여기에_명세서의_URL_경로",
+      "queryParams": {},
+      "sampleResponse": ""
+    },
+    "detailAnalysis": {
+      "name": "상세분석",
+      "description": "주거·직장·유동 인구 표 (반경 1.5km)",
+      "method": "GET",
+      "path": "/여기에_명세서의_URL_경로",
+      "queryParams": {},
+      "sampleResponse": ""
+    }
+  }
+}

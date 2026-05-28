@@ -1,0 +1,23 @@
+{
+  "slug": "sample-queen",
+  "clinicName": "퀸스유의원",
+  "address": "서울 서초구 강남대로 365",
+  "specialty": "유방외과",
+  "regions": ["강남", "서초동", "역삼동", "양재동", "양재역", "매봉역", "강남역", "역삼역", "교대역"],
+  "radiusMeters": 1500,
+  "overrides": {
+    "search": {
+      "competitors": [
+        { "name": "강남아름다운유", "volume": 1810 },
+        { "name": "강남유외과", "volume": 1690 },
+        { "name": "서울에스유", "volume": 1600 },
+        { "name": "한송이영상", "volume": 1020 },
+        { "name": "퀸스유의원", "volume": 700, "isOurs": true }
+      ],
+      "insights": [
+        "<strong>모바일 검색 비중</strong>이 높아 플레이스·모바일 UX 최적화가 필요합니다.",
+        "상위 경쟁 병원 대비 <strong>브랜드 검색량 격차</strong>가 있어 지역+질환 롱테일 확장이 유효합니다."
+      ]
+    }
+  }
+}

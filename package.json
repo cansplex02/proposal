@@ -3,11 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "dev": "next dev",
+    "dev:turbo": "next dev --turbopack",
+    "dev:reset": "node scripts/reset-dev.mjs",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "convert": "node scripts/convert-html.mjs"
+    "convert": "node scripts/convert-html.mjs",
+    "generate:analysis": "tsx scripts/generate-analysis.ts",
+    "generate:keywords": "tsx scripts/generate-keywords.ts"
   },
   "dependencies": {
     "react": "19.1.0",
@@ -21,6 +25,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.18",
-    "@eslint/eslintrc": "^3"
+    "@eslint/eslintrc": "^3",
+    "dotenv": "^16.4.7",
+    "tsx": "^4.19.3"
   }
 }

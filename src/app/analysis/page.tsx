@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import LegacyHtmlPage from "@/components/LegacyHtmlPage";
+import AnalysisPageView from "@/components/AnalysisPageView";
 import { loadHtmlFile } from "@/lib/loadContent";
+import { splitAnalysisBody } from "@/lib/analysis/splitAnalysisBody";
 import "@/styles/analysis.css";
 import "@/styles/responsive.css";
 
@@ -11,5 +12,12 @@ export const metadata: Metadata = {
 
 export default function AnalysisPage() {
   const html = loadHtmlFile("analysis-body.html");
-  return <LegacyHtmlPage html={html} className="analysis-page" />;
+  const { before, intro, after } = splitAnalysisBody(html);
+  return (
+    <AnalysisPageView
+      htmlBefore={before}
+      keywordsIntro={intro}
+      htmlAfter={after}
+    />
+  );
 }

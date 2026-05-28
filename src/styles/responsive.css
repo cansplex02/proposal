@@ -530,13 +530,6 @@ svg:not(.method-diagram) {
     grid-template-columns: 1fr !important;
   }
 
-  .keyword-table-wrap {
-    margin-left: calc(-1 * var(--page-gutter));
-    margin-right: calc(-1 * var(--page-gutter));
-    border-radius: 0;
-    width: calc(100% + 2 * var(--page-gutter));
-  }
-
   .pop-table-wrap,
   .channel-table-wrap {
     overflow-x: auto;
