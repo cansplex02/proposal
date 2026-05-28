@@ -22,7 +22,7 @@ async function fetchNearbyStations(lat: number, lng: number): Promise<string[]> 
   // OpenStreetMap Overpass: 좌표 주변 지하철역 후보 수집
   const radiusMeters = 1500;
   const query = `
-[out:json][timeout:10];
+[out:json][timeout:25];
 (
   nwr(around:${radiusMeters},${lat},${lng})["station"="subway"]["name"];
   nwr(around:${radiusMeters},${lat},${lng})["railway"="station"]["name"];
@@ -44,7 +44,7 @@ out tags center 30;
           "Content-Type": "text/plain; charset=utf-8",
           Accept: "application/json",
           // Overpass는 User-Agent/연락처 없으면 차단하는 경우가 있어요.
-          "User-Agent": "cansplex-proposal/1.0 (local dev; contact: admin@localhost)",
+          "User-Agent": "cansplex-proposal/1.0 (contact: cansplex02@gmail.com)",
         },
         body: query,
         cache: "no-store",
@@ -87,7 +87,7 @@ async function fetchNearbyDongs(lat: number, lng: number): Promise<string[]> {
   // 2) (fallback) OpenStreetMap Overpass: 좌표 주변 "동" 후보 수집 (데이터 품질은 지역별 편차 있음)
   const radiusMeters = 1500;
   const query = `
-[out:json][timeout:10];
+[out:json][timeout:25];
 (
   nwr(around:${radiusMeters},${lat},${lng})["place"~"neighbourhood|suburb|quarter|village"]["name"];
   nwr(around:${radiusMeters},${lat},${lng})["boundary"="administrative"]["admin_level"="10"]["name"];
@@ -108,7 +108,7 @@ out tags 60;
         headers: {
           "Content-Type": "text/plain; charset=utf-8",
           Accept: "application/json",
-          "User-Agent": "cansplex-proposal/1.0 (local dev; contact: admin@localhost)",
+          "User-Agent": "cansplex-proposal/1.0 (contact: cansplex02@gmail.com)",
         },
         body: query,
         cache: "no-store",
