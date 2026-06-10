@@ -1,27 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { buildKeywordMap, buildStrategyCards } from "@/lib/analysis/keywords";
-import { topicsForSpecialty, SPECIALTY_TOPICS } from "@/lib/analysis/specialties";
+import {
+  buildKeywordMap,
+  buildStrategyCards,
+  KEYWORD_PROPOSAL_NOTICE,
+} from "@/lib/analysis/keywords";
+import { buildCustomFocusTopicList } from "@/lib/analysis/focusTopicExpansion";
+import {
+  topicsForSpecialty,
+  SPECIALTY_TOPICS,
+  withCompanionTopics,
+} from "@/lib/analysis/specialties";
 
 type TreatmentMode = "surgery" | "nonsurgery";
 
-type ShareStateV1 = {
-  v: 1;
-  specialty: string;
-  location: string;
-  topicsText: string;
-  treatmentMode: TreatmentMode;
-  resolvedAddress: string;
-  editedRegions: string;
-  hasGenerated: boolean;
+type Props = {
+  /** slug 리포트에서 미리 채울 값 (패널은 그대로 인터랙티브) */
+  initialSpecialty?: string;
+  initialLocation?: string;
+  initialRegions?: string;
 };
 
-const LAST_STATE_STORAGE_KEY = "cansplex.analysis.keywordTool.lastState.v1";
-
-export default function KeywordGeneratorPanel() {
-  const [specialty, setSpecialty] = useState("");
-  const [location, setLocation] = useState("");
+export default function KeywordGeneratorPanel({
+  initialSpecialty = "",
+  initialLocation = "",
+  initialRegions = "",
+}: Props) {
+  const [specialty, setSpecialty] = useState(initialSpecialty);
+  const [location, setLocation] = useState(initialLocation);
   const [topicsText, setTopicsText] = useState("");
   const [treatmentMode, setTreatmentMode] = useState<TreatmentMode>("nonsurgery");
 
@@ -34,79 +41,15 @@ export default function KeywordGeneratorPanel() {
 
   const [result, setResult] = useState<ReturnType<typeof buildResult> | null>(null);
 
-  function toShareState(): ShareStateV1 {
-    return {
-      v: 1,
-      specialty,
-      location,
-      topicsText,
-      treatmentMode,
-      resolvedAddress,
-      editedRegions,
-      hasGenerated,
-    };
-  }
-
-  function parseShareState(search: string): ShareStateV1 | null {
-    const sp = new URLSearchParams(search.startsWith("?") ? search : `?${search}`);
-    const v = Number(sp.get("v") || "0");
-    if (v !== 1) return null;
-
-    const mode = sp.get("mode");
-    const treatmentModeParsed: TreatmentMode =
-      mode === "surgery" || mode === "nonsurgery" ? mode : "nonsurgery";
-
-    const has = sp.get("has") === "1";
-    const editedRegionsRaw = sp.get("regions") || "";
-    const specialtyRaw = sp.get("s") || "";
-
-    return {
-      v: 1,
-      specialty: specialtyRaw,
-      location: sp.get("loc") || "",
-      topicsText: sp.get("topics") || "",
-      treatmentMode: treatmentModeParsed,
-      resolvedAddress: sp.get("addr") || "",
-      editedRegions: editedRegionsRaw,
-      hasGenerated: has && Boolean(specialtyRaw.trim()) && Boolean(editedRegionsRaw.trim()),
-    };
-  }
-
-  function writeUrlFromState(next: ShareStateV1) {
+  useEffect(() => {
     if (typeof window === "undefined") return;
-
-    const sp = new URLSearchParams();
-    sp.set("v", "1");
-
-    if (next.specialty.trim()) sp.set("s", next.specialty.trim());
-    if (next.location.trim()) sp.set("loc", next.location.trim());
-    if (next.topicsText.trim()) sp.set("topics", next.topicsText.trim());
-    if (next.treatmentMode) sp.set("mode", next.treatmentMode);
-    if (next.resolvedAddress.trim()) sp.set("addr", next.resolvedAddress.trim());
-    if (next.editedRegions.trim()) sp.set("regions", next.editedRegions.trim());
-    if (next.hasGenerated) sp.set("has", "1");
-
-    const nextUrl = `${window.location.pathname}?${sp.toString()}${window.location.hash || ""}`;
-    window.history.replaceState(null, "", nextUrl);
-  }
-
-  function trySaveLastState(next: ShareStateV1) {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(LAST_STATE_STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // ignore storage errors (quota, privacy mode, etc.)
-    }
-  }
-
-  function clearLastState() {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.removeItem(LAST_STATE_STORAGE_KEY);
-    } catch {
-      // ignore
-    }
-  }
+    if (!window.location.search) return;
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.hash || ""}`
+    );
+  }, []);
 
   function buildResult(
     spec: string,
@@ -116,11 +59,22 @@ export default function KeywordGeneratorPanel() {
   ) {
     const regions = regionsRaw.split(/[,，\n]/).map((s) => s.trim()).filter(Boolean);
     if (!regions.length || !spec.trim()) return null;
-    const topics = topicsRaw.split(/[,，]/).map((s) => s.trim()).filter(Boolean);
-    const base = topics.length ? topics : topicsForSpecialty(spec);
-    const topicList = applyTreatmentMode(base, spec, mode);
+    const customTopics = topicsRaw
+      .split(/[,，]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const topicList = (
+      customTopics.length
+        ? buildCustomFocusTopicList(spec, customTopics)
+        : withCompanionTopics(
+            spec,
+            applyTreatmentMode(topicsForSpecialty(spec), spec, mode)
+          )
+    ).slice(0, 12);
     const { columns, rows } = buildKeywordMap(regions, topicList);
-    const strategyCards = buildStrategyCards(spec.trim(), regions, topicList);
+    const strategyCards = buildStrategyCards(spec.trim(), regions, topicList, {
+      focusTopics: customTopics.length ? customTopics : undefined,
+    });
     return { columns, rows, strategyCards, topicList, regions };
   }
 
@@ -139,16 +93,81 @@ export default function KeywordGeneratorPanel() {
         ? cleaned.filter((t) => !surgeryRx.test(t))
         : cleaned.filter(Boolean);
 
-    if (mode === "surgery") {
-      next = [
-        ...next,
-        `${spec}수술`,
-        "수술비용",
-        "수술후기",
-        "수술잘하는곳",
+    if (mode === "nonsurgery") {
+      const specTrim = spec.trim();
+      if (specTrim === "피부과" || specTrim.includes("피부과")) {
+        next = next.filter((t) => t !== "쁘띠" && t !== "쁘띠시술");
+        next.push("내성발톱");
+      } else if (
+        specTrim === "비뇨의학과" ||
+        specTrim === "비뇨기과" ||
+        specTrim.includes("비뇨의학과") ||
+        specTrim.includes("비뇨기과")
+      ) {
+        next = next.filter((t) => t !== "정관수술" && t !== "포경수술");
+        for (const k of ["전립선염", "발기부전"]) {
+          if (!next.includes(k)) next.push(k);
+        }
+      }
+    } else if (
+      spec.trim() === "정형외과" ||
+      spec.trim().includes("정형외과")
+    ) {
+      const extras = [
+        "관절내시경술",
+        "척추내시경술",
+        "허리수술",
+        "무릎수술",
+        "어깨수술",
+        "회전근개봉합술",
       ];
-    } else {
-      next = [...next, "비수술", "비수술치료"];
+      const main = spec.trim();
+      const rest = next.filter((t) => t !== main && !extras.includes(t));
+      next = [main, ...extras, ...rest];
+    } else if (
+      spec.trim() === "신경외과" ||
+      spec.trim().includes("신경외과")
+    ) {
+      const extras = ["척추내시경술", "허리수술", "디스크수술", "협착증수술"];
+      const main = spec.trim();
+      const rest = next.filter((t) => t !== main && !extras.includes(t));
+      next = [main, ...extras, ...rest];
+    } else if (
+      spec.trim() === "성형외과" ||
+      spec.trim().includes("성형외과")
+    ) {
+      next = [...next, "안면거상"];
+    } else if (
+      spec.trim() === "화상외과" ||
+      spec.trim().includes("화상외과")
+    ) {
+      next = [...next, "화상수술"];
+    } else if (
+      spec.trim() === "산부인과" ||
+      spec.trim().includes("산부인과")
+    ) {
+      next = [...next, "임신중절수술", "낙태수술"];
+    } else if (
+      spec.trim() === "비뇨의학과" ||
+      spec.trim() === "비뇨기과" ||
+      spec.trim().includes("비뇨의학과") ||
+      spec.trim().includes("비뇨기과")
+    ) {
+      next = next.filter((t) => t !== "전립선염" && t !== "발기부전");
+      next = [...next, "정관수술", "포경수술"];
+    }
+
+    const specTrim = spec.trim();
+    if (
+      specTrim === "신경과" ||
+      specTrim === "신경외과" ||
+      specTrim === "피부과" ||
+      specTrim.includes("신경과") ||
+      specTrim.includes("신경외과") ||
+      specTrim.includes("피부과")
+    ) {
+      const rest = next.filter((t) => t !== specTrim && t !== "대상포진");
+      next = [specTrim, "대상포진", ...rest];
     }
 
     return [...new Set(next)].filter(Boolean).slice(0, 12);
@@ -163,51 +182,6 @@ export default function KeywordGeneratorPanel() {
     refreshTable();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [specialty, editedRegions, topicsText, treatmentMode, hasGenerated]);
-
-  // URL → state (first load)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const parsed = parseShareState(window.location.search);
-    if (!parsed) return;
-
-    setSpecialty(parsed.specialty);
-    setLocation(parsed.location);
-    setTopicsText(parsed.topicsText);
-    setTreatmentMode(parsed.treatmentMode);
-    setResolvedAddress(parsed.resolvedAddress);
-    setEditedRegions(parsed.editedRegions);
-    setHasGenerated(parsed.hasGenerated);
-
-    if (parsed.hasGenerated) {
-      setResult(
-        buildResult(
-          parsed.specialty,
-          parsed.editedRegions,
-          parsed.topicsText,
-          parsed.treatmentMode
-        )
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // state → URL (after generated; also keeps URL fresh for sharing)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!hasGenerated) return;
-    const next = toShareState();
-    writeUrlFromState(next);
-    trySaveLastState(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    specialty,
-    location,
-    topicsText,
-    treatmentMode,
-    resolvedAddress,
-    editedRegions,
-    hasGenerated,
-  ]);
 
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
@@ -228,39 +202,13 @@ export default function KeywordGeneratorPanel() {
       }
 
       const regionsStr = (data.regions || []).join(", ");
-      const addr = data.roadAddress || location;
-      setResolvedAddress(addr);
+      setResolvedAddress(data.roadAddress || location);
       setEditedRegions(regionsStr);
       setHasGenerated(true);
 
-      const r = buildResult(
-        specialty,
-        regionsStr,
-        topicsText,
-        treatmentMode
+      setResult(
+        buildResult(specialty, regionsStr, topicsText, treatmentMode)
       );
-      setResult(r);
-
-      writeUrlFromState({
-        v: 1,
-        specialty,
-        location,
-        topicsText,
-        treatmentMode,
-        resolvedAddress: addr,
-        editedRegions: regionsStr,
-        hasGenerated: true,
-      });
-      trySaveLastState({
-        v: 1,
-        specialty,
-        location,
-        topicsText,
-        treatmentMode,
-        resolvedAddress: addr,
-        editedRegions: regionsStr,
-        hasGenerated: true,
-      });
     } catch {
       setError("키워드 생성 중 오류가 발생했습니다.");
     } finally {
@@ -278,15 +226,6 @@ export default function KeywordGeneratorPanel() {
     setHasGenerated(false);
     setResult(null);
     setError("");
-    clearLastState();
-
-    if (typeof window !== "undefined") {
-      window.history.replaceState(
-        null,
-        "",
-        `${window.location.pathname}${window.location.hash || ""}`
-      );
-    }
   }
 
   function copyTsv() {
@@ -298,14 +237,6 @@ export default function KeywordGeneratorPanel() {
     );
     void navigator.clipboard.writeText([header, ...lines].join("\n"));
     alert("클립보드에 복사했습니다.");
-  }
-
-  function copyShareLink() {
-    if (typeof window === "undefined") return;
-    if (!hasGenerated) return;
-    writeUrlFromState(toShareState());
-    void navigator.clipboard.writeText(window.location.href);
-    alert("공유 링크를 복사했습니다.");
   }
 
   const topicCols = result?.columns.filter((c) => c.id !== "region") ?? [];
@@ -366,7 +297,7 @@ export default function KeywordGeneratorPanel() {
             <input
               value={topicsText}
               onChange={(e) => setTopicsText(e.target.value)}
-              placeholder="비우면 진료과 기본 목록"
+              placeholder="예: 허리디스크 (연관 키워드 자동 확장)"
             />
           </label>
         </div>
@@ -376,22 +307,13 @@ export default function KeywordGeneratorPanel() {
             {loading ? "생성 중…" : "키워드 생성"}
           </button>
           {hasGenerated && (
-            <>
-              <button
-                type="button"
-                className="keyword-generator-copy"
-                onClick={copyShareLink}
-              >
-                링크 복사
-              </button>
-              <button
-                type="button"
-                className="keyword-generator-back"
-                onClick={handleClear}
-              >
-                초기화
-              </button>
-            </>
+            <button
+              type="button"
+              className="keyword-generator-back"
+              onClick={handleClear}
+            >
+              초기화
+            </button>
           )}
         </div>
       </form>
@@ -465,6 +387,8 @@ export default function KeywordGeneratorPanel() {
           </div>
         </>
       )}
+
+      <p className="keyword-disclaimer">{KEYWORD_PROPOSAL_NOTICE}</p>
     </div>
   );
 }

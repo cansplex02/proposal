@@ -11,22 +11,24 @@
     "lint": "eslint",
     "convert": "node scripts/convert-html.mjs",
     "generate:analysis": "tsx scripts/generate-analysis.ts",
+    "playwright:install": "playwright install chromium",
     "generate:keywords": "tsx scripts/generate-keywords.ts"
   },
   "dependencies": {
+    "next": "15.5.18",
     "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.5.18"
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^16.4.7",
     "eslint": "^9",
     "eslint-config-next": "15.5.18",
-    "@eslint/eslintrc": "^3",
-    "dotenv": "^16.4.7",
-    "tsx": "^4.19.3"
+    "playwright": "^1.60.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5"
   }
 }

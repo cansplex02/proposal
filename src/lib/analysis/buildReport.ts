@@ -1,5 +1,6 @@
 import { geocodeAddress } from "./geocode";
-import { topicsForSpecialty } from "./specialties";
+import { buildCustomFocusTopicList } from "./focusTopicExpansion";
+import { topicsForSpecialty, withCompanionTopics } from "./specialties";
 import { buildKeywordMap, buildStrategyCards } from "./keywords";
 import {
   aggregateFacilities,
@@ -14,6 +15,17 @@ import {
   placeholderPopulation,
 } from "./sbiz365";
 import { getSbiz365Labels, listSbiz365Readiness } from "./sbiz365Config";
+import {
+  buildAutoSearchSection,
+  hasManualSearchOverride,
+  resolveMainSearchKeyword,
+} from "./buildAutoSearch";
+import {
+  primaryRegionHintFromGeocode,
+  regionHintsForPlaceLookup,
+} from "./competitorRadius";
+import { isNaverSearchAdConfigured } from "./naverSearchAd";
+import { isNaverOpenSearchConfigured } from "./naverOpenSearch";
 import { deepMerge, formatNumber, peakAgeInsight } from "./utils";
 import type { AnalysisInput, AnalysisReport, PopulationRow } from "./types";
 
@@ -97,12 +109,19 @@ export async function buildAnalysisReport(
 
   const regions =
     input.regions?.length ? input.regions : geo.regionHints.slice(0, 9);
-  const topics = input.keywordTopics?.length
-    ? input.keywordTopics
-    : topicsForSpecialty(input.specialty);
+  const focusSeeds = (input.keywordTopics ?? [])
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const topics = (
+    focusSeeds.length
+      ? buildCustomFocusTopicList(input.specialty, focusSeeds)
+      : withCompanionTopics(input.specialty, topicsForSpecialty(input.specialty))
+  ).slice(0, 12);
 
   const { columns, rows } = buildKeywordMap(regions, topics);
-  const strategyCards = buildStrategyCards(input.specialty, regions, topics);
+  const strategyCards = buildStrategyCards(input.specialty, regions, topics, {
+    focusTopics: focusSeeds.length ? focusSeeds : undefined,
+  });
 
   const residential = popData.residential!;
   const workplace = popData.workplace!;
@@ -161,6 +180,86 @@ export async function buildAnalysisReport(
       warnings: warnings.length ? warnings : undefined,
     },
   };
+
+  const dong = regions.find((r) => /동$|역$|구$/.test(r));
+  const mainKw =
+    resolveMainSearchKeyword({
+      mainSearchKeyword: input.mainSearchKeyword,
+      regions,
+      specialty: input.specialty,
+    }) ??
+    (dong && input.specialty
+      ? `${dong} ${input.specialty}`.trim()
+      : regions[0] && input.specialty
+        ? `${regions[0]} ${input.specialty}`.trim()
+        : null);
+
+  if (mainKw && !hasManualSearchOverride(input.overrides)) {
+    try {
+      base.search = await buildAutoSearchSection({
+        mainSearchKeyword: mainKw,
+        clinicName: input.clinicName,
+        specialty: input.specialty,
+        centerLat: geo.lat,
+        centerLng: geo.lng,
+        radiusMeters,
+        clinicAddress: geo.roadAddress,
+        regionHint: primaryRegionHintFromGeocode(geo),
+        regionHints: regionHintsForPlaceLookup(geo, mainKw),
+        brandSearchKeyword: input.brandSearchKeyword,
+        excludeMapAds: !input.includeMapAds,
+      });
+      if (
+        (base.search.meta?.afterCategoryCount ?? 0) === 0 &&
+        (base.search.meta?.mapPlaceCount ?? 0) > 0
+      ) {
+        warnings.push(
+          `지도에서 ${base.search.meta!.mapPlaceCount}건 수집됐으나 진료과 필터에서 모두 제외됐습니다. 진료과·네이버 검색 키워드를 맞춰 주세요.`
+        );
+      }
+      if ((base.search.meta?.rivalCount ?? 0) === 0) {
+        warnings.push(
+          `지도 검색「${mainKw}」에서 동일 진료과·규모 경쟁 병원을 찾지 못했습니다. 고급 설정의 네이버 검색 키워드를 바꿔 보세요.`
+        );
+      }
+      base.meta!.dataSources!.push("네이버 지도 검색 (Playwright)");
+      if (isNaverSearchAdConfigured()) {
+        base.meta!.dataSources!.push("네이버 검색광고 API (keywordstool)");
+      }
+      if (isNaverOpenSearchConfigured()) {
+        base.meta!.dataSources!.push("네이버 검색 Open API (채널)");
+      }
+      const sm = base.search.meta;
+      const rivalN = sm?.rivalCount ?? 0;
+      const volMatched = sm?.volumeMatchedCount ?? 0;
+      if (sm?.volumeFetchError && rivalN > 0) {
+        warnings.push(`브랜드 검색량 API: ${sm.volumeFetchError}`);
+      } else if (
+        rivalN > 0 &&
+        volMatched === 0 &&
+        sm?.searchAdConfigured
+      ) {
+        warnings.push(
+          "브랜드 검색량: API는 연결됐지만 병원명 키워드가 매칭되지 않았습니다. (검색량이 0이거나 상호·연관키워드 불일치)"
+        );
+      } else if (rivalN > 0 && volMatched > 0 && volMatched < rivalN) {
+        warnings.push(
+          `브랜드 검색량: ${rivalN}곳 중 ${volMatched}곳만 키워드 도구 수치를 표시했습니다.`
+        );
+      }
+      base.meta!.warnings = warnings.length ? warnings : undefined;
+    } catch (e) {
+      warnings.push(
+        e instanceof Error ? e.message : "검색·경쟁사 자동 수집 실패"
+      );
+      base.meta!.warnings = warnings;
+    }
+  } else if (!hasManualSearchOverride(input.overrides)) {
+    warnings.push(
+      "지도 검색 키워드를 만들 수 없습니다. 주소·진료과 또는 고급 설정「네이버 검색 키워드」를 입력하세요."
+    );
+    base.meta!.warnings = warnings.length ? warnings : undefined;
+  }
 
   return deepMerge(base, input.overrides as Partial<AnalysisReport>);
 }

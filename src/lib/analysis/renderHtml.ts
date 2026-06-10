@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
 import type { AnalysisReport, PopulationRow } from "./types";
+import { buildChannelMatrixSkeleton } from "./buildAutoSearch";
+import { KEYWORD_PROPOSAL_NOTICE } from "./keywords";
 import { formatNumber, pct } from "./utils";
 
 const contentDir = path.join(process.cwd(), "src", "content");
@@ -22,10 +24,22 @@ export function renderAnalysisHtml(
 
   html = replaceBlock(html, "POPULATION", renderPopulationSection(report));
   html = replaceBlock(html, "MARKET", renderMarketSection(report));
-  html = replaceBlock(html, "KEYWORDS", renderKeywordSection(report));
+  // 섹션 04(공략키워드)는 템플릿 + KeywordGeneratorPanel 유지 — generate 시 교체하지 않음
 
   if (report.search?.competitors?.length) {
     html = replaceBlock(html, "SEARCH", renderSearchSection(report));
+  } else if (report.meta?.warnings?.some((w) => /검색|경쟁|지도|Playwright/i.test(w))) {
+    html = replaceBlock(
+      html,
+      "SEARCH",
+      `  <div class="section-intro">
+    <div class="section-num">03 · Search Volume</div>
+    <h2 class="section-title">검색량 및 <strong>디지털 채널</strong> 현황</h2>
+    <p class="section-sub">진료과와 병원명을 입력하면 경쟁병원 브랜드 검색량·온라인 채널을 비교합니다.</p>
+  </div>
+  <div id="analysis-search-tool"></div>
+  ${renderSearchUnavailableHtml(report)}`
+    );
   }
 
   if (report.meta?.warnings?.length) {
@@ -212,7 +226,8 @@ function renderMarketSection(r: AnalysisReport): string {
   <div class="mini-cards">${mini}</div>`;
 }
 
-function renderKeywordSection(r: AnalysisReport): string {
+/** 수동·특수 케이스용 — 기본 generate HTML에는 사용하지 않음 */
+export function renderKeywordSection(r: AnalysisReport): string {
   const cols = r.keywords.columns.filter((c) => c.id !== "region");
   const head = cols.map((c) => `<th>${escapeHtml(c.label)}</th>`).join("");
   const body = r.keywords.rows
@@ -244,40 +259,157 @@ function renderKeywordSection(r: AnalysisReport): string {
     </table>
   </div>
 
-  <div class="strategy-cards">${cards}</div>`;
+  <div class="strategy-cards">${cards}</div>
+
+  <p class="keyword-disclaimer">${escapeHtml(KEYWORD_PROPOSAL_NOTICE)}</p>`;
 }
 
-function renderSearchSection(r: AnalysisReport): string {
-  const s = r.search!;
+/** 섹션 03 폼 아래 인라인용 — intro·검색폼 제외 */
+export function renderSearchResultsHtml(report: AnalysisReport): string {
+  const s = report.search;
+  if (!s?.competitors?.length) {
+    return renderSearchUnavailableHtml(report);
+  }
+  const rivalCount = s.competitors.filter((c) => !c.isOurs).length;
+  const queryNote = s.meta?.mapQuery
+    ? `<p class="analysis-search-query-note">네이버 지도 검색: <strong>${escapeHtml(s.meta.mapQuery)}</strong> · 경쟁병원 ${rivalCount}곳</p>`
+    : "";
+  return `${queryNote}${renderSearchResultsCore(s)}`;
+}
+
+export function renderSearchUnavailableHtml(report: AnalysisReport): string {
+  const msgs = report.meta?.warnings?.length
+    ? report.meta.warnings
+    : [
+        "경쟁병원·검색량을 자동 수집하지 못했습니다. .env.local API 키·Playwright(chromium) 설치를 확인하세요.",
+      ];
+  return `<div class="analysis-search-unavailable">
+    <p class="analysis-search-warn">⚠ ${escapeHtml(msgs.join(" · "))}</p>
+  </div>`;
+}
+
+function renderSearchResultsCore(
+  s: NonNullable<AnalysisReport["search"]>
+): string {
   const max = Math.max(...s.competitors.map((c) => c.volume), 1);
   const rows = s.competitors
     .map((c) => {
-      const w = Math.round((c.volume / max) * 100);
+      const pct = Math.round((c.volume / max) * 100);
+      const barW = Math.max(pct, 28);
       const cls = c.isOurs ? "hbar-row our" : "hbar-row";
+      const val = formatNumber(c.volume);
       return `<div class="${cls}">
           <div class="hbar-name">${escapeHtml(c.name)}</div>
-          <div class="hbar-track"><div class="hbar-fill" style="width: ${w}%;"></div></div>
-          <div class="hbar-value">${formatNumber(c.volume)}</div>
+          <div class="hbar-track">
+            <div class="hbar-fill" style="width: ${barW}%;">
+              <span class="hbar-value">${val}</span>
+            </div>
+          </div>
         </div>`;
     })
     .join("\n        ");
 
   const insights = (s.insights || [])
-    .map(
-      (text) => `<div class="insight-card"><div class="insight-card-body">${text}</div></div>`
-    )
+    .map((item) => {
+      const title = escapeHtml(item.title);
+      const body = item.body;
+      return `<div class="insight-card">
+        <div class="insight-card-title">${title}</div>
+        <div class="insight-card-body">${body}</div>
+      </div>`;
+    })
     .join("\n      ");
 
-  return `  <div class="section-num">03 · Search Volume</div>
-  <h2 class="section-title">검색량 및 <strong>디지털 채널</strong> 현황</h2>
-  <p class="section-sub">경쟁 병원 브랜드 검색 겹차 (수동·네이버 데이터 입력).</p>
-  <div class="search-grid">
+  const matrix =
+    s.channelMatrix && s.channelMatrix.length > 0
+      ? s.channelMatrix
+      : buildChannelMatrixSkeleton(s.competitors);
+  const channelTable = renderChannelTable(matrix);
+
+  return `<div class="search-grid">
     <div class="card">
-      <div class="search-chart-title">브랜드 검색량 비교</div>
+      <div class="search-chart-title">브랜드 검색량 비교 (상호+진료과명 합산, PC/모바일)</div>
       <div class="hbar-list">${rows}</div>
     </div>
     <div class="insight-cards">${insights}</div>
+  </div>
+
+  ${channelTable}`;
+}
+
+function renderSearchSection(r: AnalysisReport): string {
+  const s = r.search!;
+  return `  <div class="section-intro">
+    <div class="section-num">03 · Search Volume</div>
+    <h2 class="section-title">검색량 및 <strong>디지털 채널</strong> 현황</h2>
+    <p class="section-sub">진료과와 병원명을 입력하면 경쟁병원 브랜드 검색량·온라인 채널을 비교합니다.</p>
+  </div>
+
+  <div id="analysis-search-tool"></div>
+
+  ${renderSearchResultsCore(s)}`;
+}
+
+type ChannelRow = NonNullable<
+  NonNullable<AnalysisReport["search"]>["channelMatrix"]
+>[number];
+
+function renderChannelTable(matrix: ChannelRow[]): string {
+  const body = matrix
+    .map((row) => {
+      const trCls = row.isOurs ? ' class="our"' : "";
+      return `<tr${trCls}>
+          <td>${escapeHtml(row.hospital)}</td>
+          ${renderChannelCell(row.homepage)}
+          ${renderChannelCell(row.blog)}
+          ${renderChannelCell(row.cafe)}
+          ${renderChannelCell(row.news)}
+          ${renderChannelCell(row.kin)}
+          ${renderChannelCell(row.sns)}
+          ${renderChannelCell(row.video)}
+        </tr>`;
+    })
+    .join("\n        ");
+
+  const pendingNote = matrix.some((r) =>
+    [r.homepage, r.blog, r.cafe, r.news, r.kin, r.sns, r.video].some(
+      (v) => v === "—" || v === "-"
+    )
+  )
+    ? `<p class="channel-table-note">일부 채널은 API 미연동·조회 실패로 비어 있을 수 있습니다.</p>`
+    : "";
+
+  return `<div class="card">
+    <div class="card-label">채널 운영 비교</div>
+    <table class="channel-table">
+      <thead>
+        <tr>
+          <th>병원명</th>
+          <th>홈페이지</th>
+          <th>블로그</th>
+          <th>카페/지역카페</th>
+          <th>뉴스</th>
+          <th>지식인</th>
+          <th>SNS</th>
+          <th>영상</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${body}
+      </tbody>
+    </table>
+    ${pendingNote}
   </div>`;
+}
+
+function renderChannelCell(value: string): string {
+  const v = value.trim();
+  if (v === "O") return '<td class="check-o">O</td>';
+  if (v === "X") return '<td class="check-x">X</td>';
+  if (v === "△") return '<td class="check-tri">△</td>';
+  if (v === "—" || v === "-") return '<td class="check-pending">—</td>';
+  const cls = /[/]/.test(v) ? "check-x" : "check-o";
+  return `<td class="${cls}">${escapeHtml(v)}</td>`;
 }
 
 function escapeHtml(s: string): string {

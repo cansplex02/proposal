@@ -1,9 +1,84 @@
+const SEARCH_SECTION_START = "<!-- ============ 섹션 3 · 검색량 ============ -->";
 const KEYWORDS_SECTION_START =
   "<!-- ============ 섹션 4 · 키워드 지도 ============ -->";
 const FOOTER_START = "<!-- FOOTER CTA -->";
+const SEARCH_TOOL = '<div id="analysis-search-tool"></div>';
+
+function endOfSectionIntro(html: string, introStart: number): number {
+  if (introStart < 0) return -1;
+  let depth = 0;
+  let i = introStart;
+  while (i < html.length) {
+    const nextOpen = html.indexOf("<div", i);
+    const nextClose = html.indexOf("</div>", i);
+    if (nextClose < 0) return -1;
+    if (nextOpen >= 0 && nextOpen < nextClose) {
+      depth += 1;
+      i = nextOpen + 4;
+      continue;
+    }
+    depth -= 1;
+    i = nextClose + "</div>".length;
+    if (depth === 0) return i;
+  }
+  return -1;
+}
+
+function splitSearchSection(beforeKeywords: string): {
+  beforeSearch: string;
+  searchIntro: string;
+  searchBody: string;
+} {
+  const s3 = beforeKeywords.indexOf(SEARCH_SECTION_START);
+  const s4 = beforeKeywords.indexOf(KEYWORDS_SECTION_START);
+  // beforeKeywords는 섹션 4 주석 직전까지만 잘리므로 s4가 -1일 수 있음
+  const end = s4 >= 0 ? s4 : beforeKeywords.length;
+  if (s3 < 0 || end <= s3) {
+    return { beforeSearch: beforeKeywords, searchIntro: "", searchBody: "" };
+  }
+
+  const sectionOpen = beforeKeywords.indexOf("<section", s3);
+  const introStart = beforeKeywords.indexOf('<div class="section-intro">', s3);
+  const introEnd = endOfSectionIntro(beforeKeywords, introStart);
+
+  const toolIdx = beforeKeywords.indexOf(SEARCH_TOOL, s3);
+  const beforeSearch = beforeKeywords.slice(
+    0,
+    sectionOpen >= 0 ? sectionOpen : s3
+  );
+
+  const trimSectionClose = (chunk: string) =>
+    chunk.replace(/\s*<\/section>\s*$/i, "").trim();
+
+  if (toolIdx >= s3 && toolIdx < end && introStart >= 0) {
+    return {
+      beforeSearch,
+      searchIntro: beforeKeywords.slice(introStart, toolIdx).trim(),
+      searchBody: trimSectionClose(
+        beforeKeywords.slice(toolIdx + SEARCH_TOOL.length, end)
+      ),
+    };
+  }
+
+  if (introEnd > introStart && introEnd < end) {
+    return {
+      beforeSearch,
+      searchIntro: beforeKeywords.slice(introStart, introEnd).trim(),
+      searchBody: trimSectionClose(beforeKeywords.slice(introEnd, end)),
+    };
+  }
+
+  return {
+    beforeSearch,
+    searchIntro: "",
+    searchBody: trimSectionClose(beforeKeywords.slice(s3, end)),
+  };
+}
 
 export function splitAnalysisBody(html: string): {
-  before: string;
+  beforeSearch: string;
+  searchIntro: string;
+  searchBody: string;
   intro: string;
   after: string;
 } {
@@ -11,8 +86,12 @@ export function splitAnalysisBody(html: string): {
   const footerStart = html.indexOf(FOOTER_START);
 
   if (sectionStart < 0 || footerStart < 0 || footerStart <= sectionStart) {
-    return { before: html, intro: "", after: "" };
+    const search = splitSearchSection(html);
+    return { ...search, intro: "", after: "" };
   }
+
+  const beforeKeywords = html.slice(0, sectionStart);
+  const search = splitSearchSection(beforeKeywords);
 
   const keywordsBlock = html.slice(sectionStart, footerStart);
   const introStart = keywordsBlock.indexOf('<div class="section-intro">');
@@ -23,8 +102,13 @@ export function splitAnalysisBody(html: string): {
       : "";
 
   return {
-    before: html.slice(0, sectionStart),
+    ...search,
     intro,
     after: html.slice(footerStart),
   };
+}
+
+/** 생성된 전체 body HTML에서 섹션 03 차트·채널 블록만 추출 */
+export function extractSearchBodyFromHtml(html: string): string {
+  return splitAnalysisBody(html).searchBody;
 }

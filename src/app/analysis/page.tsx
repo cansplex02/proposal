@@ -10,14 +10,20 @@ export const metadata: Metadata = {
   description: "캔즈플렉스 경쟁분석 샘플",
 };
 
-export default function AnalysisPage() {
+type Props = { searchParams: Promise<{ admin?: string }> };
+
+export default async function AnalysisPage({ searchParams }: Props) {
+  const { admin } = await searchParams;
   const html = loadHtmlFile("analysis-body.html");
-  const { before, intro, after } = splitAnalysisBody(html);
+  const { beforeSearch, searchIntro, intro, after } = splitAnalysisBody(html);
   return (
     <AnalysisPageView
-      htmlBefore={before}
+      beforeSearch={beforeSearch}
+      searchIntro={searchIntro}
+      searchBody=""
       keywordsIntro={intro}
       htmlAfter={after}
+      showReportAdminSecret={admin === "1"}
     />
   );
 }

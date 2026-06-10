@@ -1,0 +1,327 @@
+{
+  "slug": "clinic-k1racc",
+  "clinicName": "서울바른비뇨의학과의원 인천부평",
+  "address": "인천광역시 부평구 광장로 4",
+  "specialty": "비뇨의학과",
+  "radiusKm": 1.5,
+  "generatedAt": "2026-06-01T05:56:44.691Z",
+  "coordinates": {
+    "lat": 37.4910511,
+    "lng": 126.7225408
+  },
+  "population": {
+    "residential": {
+      "total": 0,
+      "male": 0,
+      "female": 0,
+      "ages": {
+        "under10": 0,
+        "teens": 0,
+        "twentiesThirties": 0,
+        "fortiesFifties": 0,
+        "sixtiesPlus": 0
+      }
+    },
+    "workplace": {
+      "total": 0,
+      "male": 0,
+      "female": 0,
+      "ages": {
+        "under10": 0,
+        "teens": 0,
+        "twentiesThirties": 0,
+        "fortiesFifties": 0,
+        "sixtiesPlus": 0
+      }
+    },
+    "insight": "주거 <strong>중장년·고령</strong> 수요와 직장 <strong>3040 직장</strong> 수요가 공존하는 상권으로, 신뢰·접근성 메시지를 병행 설계합니다."
+  },
+  "market": {
+    "facilities": [],
+    "summaryBullets": [
+      "<strong>주거인구:</strong> 주거 총 0명 · 60대 이상 0% · 여성 0.0%",
+      "<strong>직장인구:</strong> 직장 총 0명 · 60대 이상 0% · 여성 0.0%",
+      "<strong>반경 1.5km 상가:</strong> 0개 업소 · 의료·복지 0개"
+    ],
+    "miniCards": [
+      {
+        "title": "의료·복지 시설 밀집",
+        "sub": "(0개)"
+      },
+      {
+        "title": "상권 업소 밀도",
+        "sub": "총 0개"
+      },
+      {
+        "title": "주거+직장 혼합 수요",
+        "sub": "인구·유동 데이터 확인 권장"
+      }
+    ],
+    "mapNote": "인천광역시 부평구 광장로 4 중심 반경 1.5km"
+  },
+  "keywords": {
+    "subtitle": "인천·부평구·부평동·인천광역권 비뇨의학과 공략 키워드",
+    "columns": [
+      {
+        "id": "region",
+        "label": "지역"
+      },
+      {
+        "id": "비뇨기과",
+        "label": "비뇨기과"
+      },
+      {
+        "id": "비뇨의학과",
+        "label": "비뇨의학과"
+      },
+      {
+        "id": "전립선",
+        "label": "전립선"
+      },
+      {
+        "id": "전립선비대증",
+        "label": "전립선비대증"
+      },
+      {
+        "id": "요로결석",
+        "label": "요로결석"
+      },
+      {
+        "id": "방광염",
+        "label": "방광염"
+      },
+      {
+        "id": "조루",
+        "label": "조루"
+      },
+      {
+        "id": "갱년기",
+        "label": "갱년기"
+      }
+    ],
+    "rows": [
+      {
+        "region": "인천",
+        "keywords": {
+          "region": "인천",
+          "비뇨기과": "인천비뇨기과",
+          "비뇨의학과": "인천비뇨의학과",
+          "전립선": "인천전립선",
+          "전립선비대증": "인천전립선비대증",
+          "요로결석": "인천요로결석",
+          "방광염": "인천방광염",
+          "조루": "인천조루",
+          "갱년기": "인천갱년기"
+        }
+      },
+      {
+        "region": "부평구",
+        "keywords": {
+          "region": "부평구",
+          "비뇨기과": "부평구비뇨기과",
+          "비뇨의학과": "부평구비뇨의학과",
+          "전립선": "부평구전립선",
+          "전립선비대증": "부평구전립선비대증",
+          "요로결석": "부평구요로결석",
+          "방광염": "부평구방광염",
+          "조루": "부평구조루",
+          "갱년기": "부평구갱년기"
+        }
+      },
+      {
+        "region": "부평동",
+        "keywords": {
+          "region": "부평동",
+          "비뇨기과": "부평동비뇨기과",
+          "비뇨의학과": "부평동비뇨의학과",
+          "전립선": "부평동전립선",
+          "전립선비대증": "부평동전립선비대증",
+          "요로결석": "부평동요로결석",
+          "방광염": "부평동방광염",
+          "조루": "부평동조루",
+          "갱년기": "부평동갱년기"
+        }
+      },
+      {
+        "region": "인천광역",
+        "keywords": {
+          "region": "인천광역",
+          "비뇨기과": "인천광역비뇨기과",
+          "비뇨의학과": "인천광역비뇨의학과",
+          "전립선": "인천광역전립선",
+          "전립선비대증": "인천광역전립선비대증",
+          "요로결석": "인천광역요로결석",
+          "방광염": "인천광역방광염",
+          "조루": "인천광역조루",
+          "갱년기": "인천광역갱년기"
+        }
+      }
+    ],
+    "strategyCards": [
+      {
+        "label": "핵심 1차 키워드",
+        "body": "<strong>인천·부평구·부평동</strong> + 비뇨의학과"
+      },
+      {
+        "label": "전문성 키워드",
+        "body": "<strong>비뇨기과 · 전립선 · 전립선비대증</strong>"
+      },
+      {
+        "label": "브랜드 확장",
+        "body": "<strong>비뇨의학과 + 정밀 상담·예약</strong>"
+      }
+    ]
+  },
+  "meta": {
+    "dataSources": [
+      "소상공인시장진흥공단 상가(상권)정보 API",
+      "소상공인365 (미연동)",
+      "카카오 로컬 API",
+      "네이버 지도 검색 (Playwright)",
+      "네이버 검색광고 API (keywordstool)",
+      "네이버 검색 Open API (채널)"
+    ],
+    "warnings": [
+      "DATA_GO_KR_SERVICE_KEY가 없습니다. 공공데이터포털에서 '상가(상권)정보' API 키를 발급하세요.",
+      "SBIZ365_API_KEY 미설정 — 365 데이터는 overrides 또는 수동 입력",
+      "좌표 확인이 어려운 업체가 있어, 지도·진료과 필터 결과 상위 병원을 포함했습니다."
+    ]
+  },
+  "search": {
+    "competitors": [
+      {
+        "name": "서울N비뇨의학과의원",
+        "volume": 900,
+        "volumePc": 130,
+        "volumeMobile": 770,
+        "isOurs": false
+      },
+      {
+        "name": "해피비뇨의학과의원",
+        "volume": 300,
+        "volumePc": 50,
+        "volumeMobile": 250,
+        "isOurs": false
+      },
+      {
+        "name": "조희주비뇨의학과의원",
+        "volume": 60,
+        "volumePc": 35,
+        "volumeMobile": 25,
+        "isOurs": false
+      },
+      {
+        "name": "연세우리비뇨의학과의원",
+        "volume": 35,
+        "volumePc": 10,
+        "volumeMobile": 25,
+        "isOurs": false
+      },
+      {
+        "name": "제니스비뇨의학과의원",
+        "volume": 20,
+        "volumePc": 10,
+        "volumeMobile": 10,
+        "isOurs": false
+      },
+      {
+        "name": "서울바른비뇨의학과의원 인천부평",
+        "volume": 435,
+        "volumePc": 5,
+        "volumeMobile": 430,
+        "isOurs": true
+      }
+    ],
+    "insights": [
+      {
+        "title": "브랜드 검색량 격차",
+        "body": "<strong>서울N비뇨의학과의원, 해피비뇨의학과의원</strong> 등 지도 상위 노출 병원 대비 <strong>서울바른비뇨의학과의원 인천부평</strong>의 브랜드 검색은 상대적으로 낮은 편으로, <strong>직접 검색 유도</strong>와 브랜드 노출 확대가 필요합니다."
+      },
+      {
+        "title": "모바일 검색·플레이스",
+        "body": "검색의 상당 부분이 <strong>모바일</strong>에서 발생하는 것으로 보이며, <strong>네이버 플레이스·모바일 예약·진료시간</strong> 정보 정비가 필수적입니다."
+      },
+      {
+        "title": "검색 키워드와 포지션",
+        "body": "검색 수요는 <strong>부평 비뇨기과</strong> 중심인 반면, <strong>서울바른비뇨의학과의원 인천부평</strong>의 강점(<strong>비뇨의학과</strong>·통증·비수술 등)을 연결한 <strong>차별 메시지·롱테일 키워드</strong> 설계가 유효합니다."
+      }
+    ],
+    "channelMatrix": [
+      {
+        "hospital": "서울N비뇨의학과의원",
+        "isOurs": false,
+        "homepage": "O",
+        "blog": "O",
+        "cafe": "△",
+        "news": "O",
+        "kin": "X",
+        "sns": "O",
+        "video": "O"
+      },
+      {
+        "hospital": "해피비뇨의학과의원",
+        "isOurs": false,
+        "homepage": "X",
+        "blog": "O",
+        "cafe": "△",
+        "news": "O",
+        "kin": "X",
+        "sns": "O",
+        "video": "O"
+      },
+      {
+        "hospital": "조희주비뇨의학과의원",
+        "isOurs": false,
+        "homepage": "O",
+        "blog": "O",
+        "cafe": "△",
+        "news": "O",
+        "kin": "X",
+        "sns": "O",
+        "video": "O"
+      },
+      {
+        "hospital": "연세우리비뇨의학과의원",
+        "isOurs": false,
+        "homepage": "X",
+        "blog": "X",
+        "cafe": "X",
+        "news": "O",
+        "kin": "X",
+        "sns": "O",
+        "video": "X"
+      },
+      {
+        "hospital": "제니스비뇨의학과의원",
+        "isOurs": false,
+        "homepage": "O",
+        "blog": "O",
+        "cafe": "△",
+        "news": "O",
+        "kin": "X",
+        "sns": "O",
+        "video": "O"
+      },
+      {
+        "hospital": "서울바른비뇨의학과의원 인천부평",
+        "isOurs": true,
+        "homepage": "O",
+        "blog": "△",
+        "cafe": "X",
+        "news": "X",
+        "kin": "△",
+        "sns": "O",
+        "video": "△"
+      }
+    ],
+    "meta": {
+      "mapQuery": "부평 비뇨기과",
+      "rivalCount": 5,
+      "radiusFallback": true,
+      "radiusMetersUsed": 1500,
+      "radiusExpanded": false,
+      "mapPlaceCount": 31,
+      "afterCategoryCount": 5
+    }
+  }
+}

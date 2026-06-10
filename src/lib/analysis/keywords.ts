@@ -1,4 +1,18 @@
 import type { KeywordColumn, KeywordRow } from "./types";
+import { SPECIALTY_TOPICS } from "./specialties";
+
+/** 지역·진료 공략키워드 섹션 하단 안내 */
+export const KEYWORD_PROPOSAL_NOTICE =
+  "해당 키워드는 제안 단계에 선정된 1차 키워드로, 실제 작업 키워드와 차이가 있을 수 있습니다.";
+
+const DEPARTMENT_TOPIC_NAMES = new Set(Object.keys(SPECIALTY_TOPICS));
+
+function isProcedureKeyword(topic: string, mainSpecialty: string): boolean {
+  const t = topic.trim();
+  if (!t || t === mainSpecialty) return false;
+  if (DEPARTMENT_TOPIC_NAMES.has(t)) return false;
+  return true;
+}
 
 export function buildKeywordMap(
   regions: string[],
@@ -25,15 +39,28 @@ export function buildKeywordMap(
 export function buildStrategyCards(
   specialty: string,
   regions: string[],
-  topics: string[]
+  topics: string[],
+  options?: { focusTopics?: string[] }
 ): { label: string; body: string }[] {
   const mainSpecialty = specialty.trim() || "진료과";
   const primary = regions.slice(0, 3).join("·");
-  const expert =
-    topics
-      .filter((t) => t !== mainSpecialty)
-      .slice(0, 3)
-      .join(" · ") || topics.slice(1, 4).join(" · ") || topics[0] || "";
+
+  const focusSeeds = (options?.focusTopics ?? [])
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  const expert = focusSeeds.length
+    ? focusSeeds.join(" · ")
+    : topics
+        .filter((t) => isProcedureKeyword(t, mainSpecialty))
+        .slice(0, 3)
+        .join(" · ") ||
+      topics
+        .filter((t) => t !== mainSpecialty)
+        .slice(0, 3)
+        .join(" · ") ||
+      topics[0] ||
+      "";
 
   return [
     {

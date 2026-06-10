@@ -368,6 +368,18 @@
     grid-template-columns: 1.2fr 1fr;
     gap: 24px;
     margin-bottom: 24px;
+    align-items: stretch;
+  }
+  .market-grid > .card {
+    min-height: 0;
+  }
+  .market-grid > .card:last-child {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .market-grid > .card:last-child .card-label {
+    flex-shrink: 0;
   }
 
   /* 시설 차트 */
@@ -417,8 +429,11 @@
 
   /* 지도 이미지 placeholder */
   .map-area {
-    height: 100%;
-    min-height: 320px;
+    flex: 1 1 auto;
+    min-height: 280px;
+    max-height: 360px;
+    width: 100%;
+    box-sizing: border-box;
     border-radius: 12px;
     background: var(--bg-soft);
     border: 2px dashed var(--line);
@@ -428,8 +443,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 16px;
-    transition: all 0.3s;
+    gap: 12px;
+    padding: 20px 16px;
+    transition: border-color 0.3s, background 0.3s;
   }
   .map-area:hover {
     border-color: var(--blue);
@@ -475,23 +491,31 @@
     margin-top: 4px;
   }
 
-  /* 요약 그리드 */
+  /* 요약 그리드 — market-grid 콘텐츠 영역과 동일 폭 (section.alt > * 좌우 64px 패딩 반영) */
+  .section.alt > .summary-card {
+    width: calc(100% - 128px);
+    max-width: calc(1440px - 128px);
+    padding: 32px;
+    margin: 0 auto 24px;
+    box-sizing: border-box;
+  }
   .summary-card {
-    grid-column: 1 / -1;
     background: var(--navy);
     color: #fff;
-    border: none;
+    border: 1px solid rgba(255,255,255,0.08);
   }
   .summary-card .card-label {
     background: rgba(91,136,240,0.2);
     color: var(--blue-light);
+    margin-bottom: 16px;
   }
   .summary-list {
     list-style: none;
     padding: 0;
+    margin: 0;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 14px;
+    gap: 16px 24px;
   }
   .summary-list li {
     color: rgba(255,255,255,0.85);
@@ -522,7 +546,7 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
-    margin-top: 24px;
+    margin-top: 0;
   }
   .mini-card {
     background: #fff;
@@ -578,7 +602,7 @@
   }
   .hbar-row {
     display: grid;
-    grid-template-columns: 120px 1fr 60px;
+    grid-template-columns: 120px 1fr;
     gap: 12px;
     align-items: center;
   }
@@ -595,11 +619,17 @@
   .hbar-track {
     background: var(--line-soft);
     border-radius: 100px;
-    height: 16px;
-    overflow: hidden;
+    height: 22px;
+    overflow: visible;
   }
   .hbar-fill {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
     height: 100%;
+    min-width: 3.25rem;
+    padding: 0 10px;
+    box-sizing: border-box;
     background: linear-gradient(90deg, var(--blue-light), var(--blue));
     border-radius: 100px;
     transition: width 0.6s ease;
@@ -608,10 +638,13 @@
     background: linear-gradient(90deg, #5b88f0, #2b5cd9);
   }
   .hbar-value {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    color: var(--ink-soft);
+    color: #fff;
     font-variant-numeric: tabular-nums;
+    line-height: 1;
+    white-space: nowrap;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
   }
 
   /* 우측 인사이트 카드들 */
@@ -686,6 +719,14 @@
   .check-o { color: var(--blue); font-weight: 800; }
   .check-x { color: #d9534f; font-weight: 800; }
   .check-tri { color: #f0a020; font-weight: 800; }
+  .check-pending { color: #94a3b8; font-weight: 600; }
+
+  .channel-table-note {
+    margin: 12px 16px 4px;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.5;
+  }
 
   /* ============ 섹션 4 · 키워드 지도 ============ */
   #keywords .section-intro {
@@ -747,6 +788,102 @@
     background: var(--bg-soft);
   }
   .keyword-table tbody tr:last-child td { border-bottom: none; }
+
+  /* 섹션 03 · 검색량 — 직접 검색 폼 */
+  #search .analysis-search-tool-inner {
+    width: 100%;
+    margin: 0 0 28px;
+  }
+  #search .analysis-search-results {
+    width: 100%;
+  }
+  .analysis-search-query-note {
+    margin: 0 0 16px;
+    font-size: 13px;
+    color: #475569;
+  }
+  .analysis-search-query-note strong {
+    color: var(--navy, #0a1f44);
+  }
+  .analysis-search-warn,
+  .analysis-search-unavailable .analysis-search-warn {
+    margin: 0 0 20px;
+    padding: 16px 18px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #92400e;
+    background: #fffbeb;
+    border-radius: 10px;
+    border: 1px solid #fcd34d;
+  }
+  .analysis-search-empty {
+    margin: 8px 0 0;
+    padding: 28px 24px;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.65;
+    color: #64748b;
+    background: var(--bg-soft, #f1f5f9);
+    border-radius: 12px;
+    border: 1px dashed #cbd5e1;
+  }
+  #search .analysis-search-results--live {
+    animation: analysis-search-fade-in 0.35s ease;
+  }
+  @keyframes analysis-search-fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .analysis-search-fields {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px 16px;
+    align-items: start;
+    margin-bottom: 12px;
+  }
+  .analysis-search-fields label {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .analysis-search-hint {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.55;
+    margin: 0 0 16px;
+  }
+  .analysis-search-keyword-hint {
+    grid-column: 3;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.45;
+    margin: 0;
+  }
+  .analysis-search-address-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: end;
+    margin-bottom: 12px;
+  }
+  .analysis-search-address-label {
+    min-width: 0;
+  }
+  .analysis-search-admin-secret {
+    flex: 1;
+    min-width: 160px;
+    max-width: 280px;
+  }
+  .analysis-search-status {
+    margin: 12px 0 0;
+    padding: 12px 14px;
+    background: var(--blue-pale, #eef3fc);
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    color: var(--navy);
+  }
 
   /* 키워드 자동 생성 폼 (분석 페이지 내장) */
   .keyword-generator {
@@ -905,6 +1042,15 @@
     cursor: pointer;
   }
 
+  .keyword-disclaimer {
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--ink-muted);
+    line-height: 1.65;
+  }
+
   /* 키워드 전략 카드 3개 */
   .strategy-cards {
     display: grid;
@@ -998,6 +1144,13 @@
     .keyword-table td.region { font-size: 12.5px; }
   }
   @media (max-width: 1024px) {
+    .analysis-search-fields {
+      grid-template-columns: 1fr;
+      align-items: stretch;
+    }
+    .analysis-search-keyword-hint {
+      grid-column: 1;
+    }
     .keyword-generator-fields {
       grid-template-columns: 1fr;
       align-items: stretch;
@@ -1005,8 +1158,20 @@
     .population-grid, .market-grid, .search-grid { grid-template-columns: 1fr; }
     .mini-cards, .strategy-cards { grid-template-columns: 1fr; }
     .summary-list { grid-template-columns: 1fr; }
+    .market-grid > .card:last-child .map-area {
+      min-height: 240px;
+      max-height: none;
+    }
     .hero-headline { font-size: 44px; }
     .section-title { font-size: 36px; }
+  }
+  /* responsive.css 768px: .section.alt > * 좌우 패딩 0 → 카드와 동일하게 100% */
+  @media (max-width: 768px) {
+    .section.alt > .summary-card {
+      width: 100%;
+      max-width: none;
+      padding: 24px;
+    }
   }
   @media (max-width: 640px) {
     .nav { padding: 12px 24px; }
@@ -1020,4 +1185,9 @@
     .pop-table, .channel-table { font-size: 10.5px; }
     .pop-table th, .pop-table td { padding: 10px 6px; }
     .footer-cta { padding: 60px 24px; }
+    .section.alt > .summary-card {
+      width: calc(100% - 48px);
+      max-width: calc(1440px - 48px);
+      padding: 24px;
+    }
   }

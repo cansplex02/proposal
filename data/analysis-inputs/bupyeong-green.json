@@ -1,0 +1,10 @@
+{
+  "slug": "bupyeong-green",
+  "clinicName": "부평그린마취통증의학과의원",
+  "address": "인천 부평구 부평동",
+  "specialty": "마취통증의학과",
+  "mainSearchKeyword": "부평 정형외과",
+  "includeMapAds": true,
+  "regions": ["부평", "부평동", "부평역", "갈산동", "산곡동"],
+  "radiusMeters": 1500
+}

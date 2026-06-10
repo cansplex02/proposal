@@ -1,16 +1,36 @@
+import fs from "fs";
+import path from "path";
 import { NextResponse } from "next/server";
 import { buildAnalysisReport } from "@/lib/analysis/buildReport";
-import { renderAnalysisHtml, writeAnalysisOutputs } from "@/lib/analysis/renderHtml";
+import { resolveAddressFromClinicName } from "@/lib/analysis/naverLocalSearch";
+import {
+  renderAnalysisHtml,
+  renderSearchResultsHtml,
+  writeAnalysisOutputs,
+} from "@/lib/analysis/renderHtml";
+import {
+  suggestSlugFromAddressSpecialty,
+  suggestSlugFromClinicName,
+} from "@/lib/analysis/suggestSlug";
 import type { AnalysisInput } from "@/lib/analysis/types";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   const secret = process.env.ANALYSIS_ADMIN_SECRET;
   if (secret) {
     const auth = req.headers.get("authorization");
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const dev = process.env.NODE_ENV === "development";
+    if (auth !== `Bearer ${secret}` && !(dev && !auth)) {
+      return NextResponse.json(
+        {
+          error: dev
+            ? "Unauthorized — Admin Secret을 입력하거나 .env의 ANALYSIS_ADMIN_SECRET을 비우세요."
+            : "Unauthorized",
+        },
+        { status: 401 }
+      );
     }
   }
 
@@ -21,23 +41,85 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  if (!input.slug || !input.clinicName || !input.address || !input.specialty) {
+  const clinicName = input.clinicName?.trim() ?? "";
+  input.clinicName = clinicName;
+
+  if (!input.specialty?.trim()) {
+    return NextResponse.json({ error: "진료과는 필수입니다." }, { status: 400 });
+  }
+
+  if (!input.address?.trim() && clinicName) {
+    try {
+      const resolved = await resolveAddressFromClinicName(clinicName);
+      if (resolved) input.address = resolved;
+    } catch {
+      /* 주소 자동 조회 실패 */
+    }
+  }
+
+  if (!input.address?.trim()) {
     return NextResponse.json(
-      { error: "slug, clinicName, address, specialty 필수" },
+      {
+        error: clinicName
+          ? "주소가 필요합니다.「주소 찾기」로 채우거나 주소를 직접 입력한 뒤 다시 시도하세요."
+          : "병원명이 없을 때는 주소를 입력해 주세요. (개원 예정 등)",
+      },
       { status: 400 }
     );
+  }
+
+  if (!input.slug?.trim()) {
+    input.slug = clinicName
+      ? suggestSlugFromClinicName(clinicName)
+      : suggestSlugFromAddressSpecialty(
+          input.address.trim(),
+          input.specialty.trim()
+        );
   }
 
   try {
     const report = await buildAnalysisReport(input);
     const html = renderAnalysisHtml(report);
-    const paths = writeAnalysisOutputs(report, html);
+    const searchBody = renderSearchResultsHtml(report);
+    const rivalCount =
+      report.search?.competitors?.filter((c) => !c.isOurs).length ?? 0;
+    const searchKeyword = report.search?.meta?.mapQuery ?? null;
+
+    let paths: { jsonPath: string; htmlPath: string } | undefined;
+    let saveError: string | undefined;
+    try {
+      if (!process.env.VERCEL) {
+        paths = writeAnalysisOutputs(report, html);
+        const inputDir = path.join(process.cwd(), "data", "analysis-inputs");
+        fs.mkdirSync(inputDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(inputDir, `${report.slug}.json`),
+          JSON.stringify(input, null, 2),
+          "utf8"
+        );
+      }
+    } catch (e) {
+      saveError =
+        e instanceof Error ? e.message : "파일 저장 실패 (화면 결과는 표시됨)";
+      console.error("[analysis/generate] save failed:", e);
+    }
+
+    const warnings = [
+      ...(report.meta?.warnings ?? []),
+      ...(saveError ? [saveError] : []),
+    ];
 
     return NextResponse.json({
       ok: true,
       slug: report.slug,
-      url: `/analysis/${report.slug}`,
-      warnings: report.meta?.warnings,
+      search: report.search ?? null,
+      competitors: report.search?.competitors ?? [],
+      insights: report.search?.insights ?? [],
+      channelMatrix: report.search?.channelMatrix ?? [],
+      searchBody,
+      rivalCount,
+      searchKeyword,
+      warnings: warnings.length ? warnings : undefined,
       paths,
     });
   } catch (e) {

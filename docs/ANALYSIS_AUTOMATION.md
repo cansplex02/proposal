@@ -56,13 +56,12 @@ npm run generate:analysis -- --input data/analysis-inputs/gangnam-skin.json
 
 ### 3) 확인 · 배포
 
-- 미리보기: `http://localhost:3000/analysis/{slug}`
-- 샘플(수동 HTML): `/analysis`
+- 미리보기: `http://localhost:3000/analysis` (섹션 03 폼에서 생성)
 - `git add` → `push` → Vercel 재배포
 
 ### 4) 제안서에 링크
 
-제안서 CTA 또는 병원분석 섹션 링크를 `/analysis/{slug}` 로 연결합니다.
+제안서 CTA 또는 병원분석 섹션 링크를 `/analysis` 로 연결합니다.
 
 ---
 
@@ -95,7 +94,7 @@ npm run generate:analysis -- --input data/analysis-inputs/gangnam-skin.json
 | `npm run generate:analysis` | 개발 또는 기획(로컬) | 1분 |
 | 검색량·경쟁사 표 | 마케팅 | overrides JSON |
 | 인구 0이면 365에서 수치 복사 | 마케팅 | overrides.population |
-| `/analysis/{slug}` QA | 기획 | 브라우저 |
+| `/analysis` QA (섹션 03 생성) | 기획 | 브라우저 |
 | 배포 | 개발 | git push |
 
 **폴더 규칙**
@@ -108,9 +107,9 @@ npm run generate:analysis -- --input data/analysis-inputs/gangnam-skin.json
 
 ## 웹 UI (로컬)
 
-`http://localhost:3000/admin/analysis`
+`http://localhost:3000/analysis` (또는 `/admin/analysis` → `/analysis?admin=1`)
 
-- 주소·진료과만 넣고 생성 (로컬 dev 전용, Vercel에서는 파일 저장 불가)
+- 섹션 03에서 진료과·병원명 입력 후 생성 (로컬 dev, Vercel에서는 파일 저장 불가)
 
 ## API (로컬 자동화)
 
@@ -124,8 +123,28 @@ Content-Type: application/json
 
 ---
 
+## 섹션 03 · 검색·경쟁사 (자동)
+
+입력 JSON에 **`mainSearchKeyword`** (예: `부평 정형외과`)만 넣으면:
+
+1. **네이버 지도** 1페이지 업체 수집 (Playwright · 우리 `clinicName` 제외 · `광고` 업체 기본 제외)
+   - **경쟁사 필터**: 플레이스 **등록 카테고리(진료과)** + **의원/병원/한방** 규모
+   - **거리**: 입력 **주소 지오코딩** 기준 **반경 1.5km**( `radiusMeters` 기본 1500) 이내 업체만
+   - 예: `마취통증의학과` → 카테고리 **정형외과·통증·재활** 등만, **의원↔의원** (병원·한의원·피부과 등 제외)
+2. **브랜드 검색량** 막대 — `NAVER_SEARCHAD_*` 설정 시 keywordstool 실측 (PC+모바일)
+3. **인사이트 3종** — 브랜드 격차(A) · 모바일(B) · 포지션(E), 제안서용·대략 수치
+
+`mainSearchKeyword` 생략 시 `regions[0] + specialty` 로 자동 추론합니다.  
+수동으로 덮을 때만 `overrides.search.competitors` 를 채우세요.
+
+**섹션 04(공략키워드)** 는 `generate` 시 HTML을 바꾸지 않습니다. 같은 `/analysis` 페이지에서 **KeywordGeneratorPanel** 로 입력·생성합니다.
+
+로컬 최초 1회: `npm run playwright:install`  
+Playwright 실패 시: `.env.local` 에 `NAVER_OPEN_API_CLIENT_ID` · `NAVER_OPEN_API_CLIENT_SECRET` (지역 검색 API)
+
 ## 한계 · 보완
 
-- **검색량·채널 비교**는 네이버 데이터라 API 자동화 없음 → `overrides.search` 수동
+- **채널 운영 비교 표** — 아직 자동 수집·렌더 미연동 → 추후 Open API
+- **검색량** — `.env.local`에 `NAVER_SEARCHAD_CUSTOMER_ID`, `NAVER_SEARCHAD_API_KEY`, `NAVER_SEARCHAD_SECRET_KEY` (검색광고 > 도구 > API 사용 관리)
 - **지도 이미지**는 Kakao Static Map 등 추가 연동 가능 (현재는 좌표·주소 텍스트)
 - 365 인구 API 경로는 **발급 문서마다 다를 수 있음** → 연결 안 되면 `overrides.population` 사용

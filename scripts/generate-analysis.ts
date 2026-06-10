@@ -80,7 +80,7 @@ async function main() {
   console.log("\n완료");
   console.log(`  JSON : ${jsonPath}`);
   console.log(`  HTML : ${htmlPath}`);
-  console.log(`  URL  : /analysis/${report.slug}`);
+  console.log(`  미리보기: http://localhost:3000/analysis`);
   if (report.meta?.warnings?.length) {
     console.log("\n주의:");
     report.meta.warnings.forEach((w) => console.log(`  - ${w}`));
