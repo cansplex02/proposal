@@ -25,7 +25,6 @@ type Props = {
 export default function KeywordGeneratorPanel({
   initialSpecialty = "",
   initialLocation = "",
-  initialRegions = "",
 }: Props) {
   const [specialty, setSpecialty] = useState(initialSpecialty);
   const [location, setLocation] = useState(initialLocation);

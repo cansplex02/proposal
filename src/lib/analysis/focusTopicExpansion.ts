@@ -374,7 +374,7 @@ export function buildCustomFocusTopicList(
   const exclusive = exclusiveFocusTopicList(seeds);
   if (exclusive) return exclusive;
 
-  let topics = withCompanionTopics(specialty, expandFocusedTopics(specialty, seeds));
+  const topics = withCompanionTopics(specialty, expandFocusedTopics(specialty, seeds));
   return excludeFocusSeedsFromTopics(topics, seeds);
 }
 

@@ -6,7 +6,6 @@ import {
   filterCompetitorsWithinRadiusAdaptive,
   regionHintFromAddress,
 } from "./competitorRadius";
-import type { MapPlaceHit } from "./naverMapCompetitors";
 import { resolveMapPlaces } from "./resolveMapPlaces";
 import { isNaverOpenSearchConfigured } from "./naverOpenSearch";
 import {

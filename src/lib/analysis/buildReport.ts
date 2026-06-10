@@ -128,7 +128,7 @@ export async function buildAnalysisReport(
 
   const base: AnalysisReport = {
     slug: input.slug,
-    clinicName: input.clinicName,
+    clinicName: input.clinicName ?? "",
     address: geo.roadAddress,
     specialty: input.specialty,
     radiusKm: radiusMeters / 1000,
@@ -198,7 +198,7 @@ export async function buildAnalysisReport(
     try {
       base.search = await buildAutoSearchSection({
         mainSearchKeyword: mainKw,
-        clinicName: input.clinicName,
+        clinicName: input.clinicName ?? "",
         specialty: input.specialty,
         centerLat: geo.lat,
         centerLng: geo.lng,
