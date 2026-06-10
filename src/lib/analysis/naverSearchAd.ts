@@ -10,12 +10,29 @@ export type KeywordVolume = {
 const BASE_URL = "https://api.searchad.naver.com";
 const KEYWORD_URI = "/keywordstool";
 
+export function missingSearchAdEnvVars(): string[] {
+  const missing: string[] = [];
+  if (!process.env.NAVER_SEARCHAD_CUSTOMER_ID?.trim()) {
+    missing.push("NAVER_SEARCHAD_CUSTOMER_ID");
+  }
+  if (!process.env.NAVER_SEARCHAD_API_KEY?.trim()) {
+    missing.push("NAVER_SEARCHAD_API_KEY");
+  }
+  if (!process.env.NAVER_SEARCHAD_SECRET_KEY?.trim()) {
+    missing.push("NAVER_SEARCHAD_SECRET_KEY");
+  }
+  return missing;
+}
+
 export function isNaverSearchAdConfigured(): boolean {
-  return Boolean(
-    process.env.NAVER_SEARCHAD_CUSTOMER_ID &&
-      process.env.NAVER_SEARCHAD_API_KEY &&
-      process.env.NAVER_SEARCHAD_SECRET_KEY
-  );
+  return missingSearchAdEnvVars().length === 0;
+}
+
+export function searchAdConfigErrorMessage(): string {
+  const missing = missingSearchAdEnvVars();
+  if (!missing.length) return "";
+  const where = process.env.VERCEL ? "Vercel 환경 변수" : ".env.local";
+  return `${missing.join(", ")} 미설정 (${where}) — 네이버 검색광고 > 도구 > API 사용 관리에서 확인`;
 }
 
 function sign(timestamp: string, method: string, uri: string, secret: string): string {

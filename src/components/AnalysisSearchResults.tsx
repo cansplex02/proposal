@@ -80,7 +80,7 @@ export default function AnalysisSearchResults({ data, mapQuery }: Props) {
               {data.meta?.volumeFetchError
                 ? `브랜드 검색량: ${data.meta.volumeFetchError}`
                 : data.meta?.searchAdConfigured === false
-                  ? "브랜드 검색량: .env.local에 NAVER_SEARCHAD_CUSTOMER_ID·API_KEY·SECRET_KEY를 설정하세요."
+                  ? "브랜드 검색량: NAVER_SEARCHAD_CUSTOMER_ID·API_KEY·SECRET_KEY를 .env.local 또는 Vercel 환경 변수에 설정하세요."
                   : `브랜드 검색량: 병원명 키워드 매칭 없음 (경쟁 ${rivals.length}곳, 검색량 표시 0곳). 키워드 도구에서 상호를 직접 조회해 비교하세요.`}
             </p>
           ) : null}

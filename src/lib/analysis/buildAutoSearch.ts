@@ -11,6 +11,7 @@ import { isNaverOpenSearchConfigured } from "./naverOpenSearch";
 import {
   fetchKeywordVolumes,
   isNaverSearchAdConfigured,
+  searchAdConfigErrorMessage,
   keywordCandidatesForPlace,
   mergePlaceVolumes,
   resolveVolumePairForPlace,
@@ -98,8 +99,7 @@ export async function buildAutoSearchSection(
 
   if (uniqueRivals.length > 0 || clinicName) {
     if (!isNaverSearchAdConfigured()) {
-      volumeFetchError =
-        "NAVER_SEARCHAD_CUSTOMER_ID·API_KEY·SECRET_KEY 미설정 (.env.local)";
+      volumeFetchError = searchAdConfigErrorMessage();
     } else if (hintKeywords.length > 0) {
       try {
         volumes = await fetchKeywordVolumes(hintKeywords);
