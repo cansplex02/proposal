@@ -81,13 +81,74 @@ function parseQcCnt(value: unknown): number {
 }
 
 const MEDICAL_SUFFIX_RE = /(의원|병원|클리닉|센터|의료원|한의원|치과)$/u;
+const BRANCH_AFTER_CLINIC_RE =
+  /^(.+?(?:의원|병원|클리닉|센터|의료원|한의원|치과))(.+)$/u;
+const BRANCH_TAIL_RE =
+  /^(?:[가-힣]{2,14}(?:역곡역|역점|역|점|동|지점|본점|분점)|부천역곡역|역곡역)$/u;
+
+/** 의원·병원 뒤에 붙은 지역·지점명 제거 (연세안…의원 부천역곡역 → 연세안…의원) */
+export function stripBranchAfterMedicalSuffix(placeName: string): string {
+  const bare = placeName.replace(/\s+/g, "").trim();
+  if (!bare) return bare;
+
+  const m = bare.match(BRANCH_AFTER_CLINIC_RE);
+  if (!m) return bare;
+
+  const clinic = m[1];
+  const tail = m[2];
+  if (!tail || tail.length < 2) return bare;
+  if (BRANCH_TAIL_RE.test(tail) || /(?:역|점|동)$/.test(tail)) {
+    return clinic;
+  }
+  return bare;
+}
+
+/** 마취통증의학과 → 통증의학과 (검색광고 키워드 조회용) */
+export function mapAnesthesiaToPainDept(name: string): string | null {
+  if (!name.includes("마취통증의학과")) return null;
+  const mapped = name.replace(/마취통증의학과/g, "통증의학과");
+  return mapped !== name ? mapped : null;
+}
 
 /** 상호에서 의원·병원 등 접미사 제거 (예: 부평그린마취통증의학과의원 → 부평그린마취통증의학과) */
 export function stripMedicalSuffix(placeName: string): string | null {
-  const bare = placeName.replace(/\s+/g, "").trim();
+  const bare = stripBranchAfterMedicalSuffix(placeName);
   const short = bare.replace(MEDICAL_SUFFIX_RE, "");
   if (short.length >= 3 && short !== bare) return short;
   return null;
+}
+
+function addVolumeKeywordCandidate(target: Set<string>, raw: string): void {
+  const t = raw.replace(/\s+/g, "").trim();
+  if (t.length >= 2) target.add(t);
+}
+
+/** 병원 상호 → 검색광고 API hint·매칭용 키워드 후보 */
+export function volumeSearchKeywordsForPlace(
+  placeName: string,
+  brandSearchKeyword?: string
+): string[] {
+  const candidates = new Set<string>();
+
+  if (brandSearchKeyword) addVolumeKeywordCandidate(candidates, brandSearchKeyword);
+
+  const compact = placeName.replace(/\s+/g, "").trim();
+  const base = stripBranchAfterMedicalSuffix(placeName);
+
+  addVolumeKeywordCandidate(candidates, compact);
+  if (base !== compact) addVolumeKeywordCandidate(candidates, base);
+
+  const painFromBase = mapAnesthesiaToPainDept(base);
+  if (painFromBase) addVolumeKeywordCandidate(candidates, painFromBase);
+
+  const short = stripMedicalSuffix(base);
+  if (short) {
+    addVolumeKeywordCandidate(candidates, short);
+    const shortPain = mapAnesthesiaToPainDept(short);
+    if (shortPain) addVolumeKeywordCandidate(candidates, shortPain);
+  }
+
+  return [...candidates];
 }
 
 /** 병원 상호 → 키워드 도구 조회용 후보 (공백 제거·짧은 브랜드) */
@@ -95,19 +156,7 @@ export function keywordCandidatesForPlace(
   placeName: string,
   brandSearchKeyword?: string
 ): string[] {
-  const candidates = new Set<string>();
-  const add = (s: string) => {
-    const t = s.replace(/\s+/g, "").trim();
-    if (t.length >= 2) candidates.add(t);
-  };
-
-  if (brandSearchKeyword) add(brandSearchKeyword);
-  add(placeName);
-
-  const short = stripMedicalSuffix(placeName);
-  if (short) add(short);
-
-  return [...candidates];
+  return volumeSearchKeywordsForPlace(placeName, brandSearchKeyword);
 }
 
 export type PlaceVolumePair = {
@@ -132,8 +181,13 @@ function findBestVolumeByPlaceName(
   placeName: string,
   volumes: Map<string, KeywordVolume>
 ): KeywordVolume | null {
-  const compact = placeName.replace(/\s+/g, "");
+  const base = stripBranchAfterMedicalSuffix(placeName);
+  const compact = base.replace(/\s+/g, "");
   if (!compact) return null;
+
+  const painCompact = mapAnesthesiaToPainDept(compact) ?? compact;
+  const short = stripMedicalSuffix(base);
+  const shortPain = short ? mapAnesthesiaToPainDept(short) : null;
 
   let best: KeywordVolume | null = null;
   let bestScore = 0;
@@ -144,12 +198,19 @@ function findBestVolumeByPlaceName(
     if (k.length < 3) continue;
 
     let score = 0;
-    if (normalizeKeywordKey(compact) === k) score = 1000 + k.length;
-    else if (compact.includes(k)) score = 500 + k.length;
-    else if (k.includes(compact.replace(MEDICAL_SUFFIX_RE, ""))) score = 400 + k.length;
-    else {
-      const short = stripMedicalSuffix(placeName);
-      if (short && (k.includes(normalizeKeywordKey(short)) || normalizeKeywordKey(short).includes(k))) {
+    if (normalizeKeywordKey(compact) === k || normalizeKeywordKey(painCompact) === k) {
+      score = 1000 + k.length;
+    } else if (compact.includes(k) || painCompact.includes(k)) {
+      score = 500 + k.length;
+    } else if (
+      k.includes(compact.replace(MEDICAL_SUFFIX_RE, "")) ||
+      k.includes(painCompact.replace(MEDICAL_SUFFIX_RE, ""))
+    ) {
+      score = 400 + k.length;
+    } else if (short) {
+      const sn = normalizeKeywordKey(short);
+      const sp = shortPain ? normalizeKeywordKey(shortPain) : sn;
+      if (k.includes(sn) || sn.includes(k) || k.includes(sp) || sp.includes(k)) {
         score = 300 + k.length;
       }
     }
@@ -169,34 +230,36 @@ export function resolveVolumePairForPlace(
   volumes: Map<string, KeywordVolume>,
   brandSearchKeyword?: string
 ): PlaceVolumePair {
-  let full = lookupKeywordVolume(placeName, volumes);
-  if ((!full || full.total <= 0) && brandSearchKeyword) {
-    const alt = lookupKeywordVolume(brandSearchKeyword, volumes);
-    if (alt && alt.total > 0) full = alt;
+  const keys = volumeSearchKeywordsForPlace(placeName, brandSearchKeyword);
+  const normalizedBase = stripBranchAfterMedicalSuffix(placeName);
+
+  let best: KeywordVolume | null = null;
+  let bestKey: string | null = null;
+
+  for (const key of keys) {
+    const vol = lookupKeywordVolume(key, volumes);
+    if (vol && vol.total > 0 && (!best || vol.total > best.total)) {
+      best = vol;
+      bestKey = vol.keyword;
+    }
   }
-  if (full && full.total <= 0) full = null;
 
-  const shortKeyword = stripMedicalSuffix(placeName);
-  const short = shortKeyword
-    ? lookupKeywordVolume(shortKeyword, volumes)
-    : null;
+  if (!best) {
+    best = findBestVolumeByPlaceName(normalizedBase, volumes);
+    if (best) bestKey = best.keyword;
+  }
+  if (!best && brandSearchKeyword) {
+    best = findBestVolumeByPlaceName(brandSearchKeyword, volumes);
+    if (best) bestKey = best.keyword;
+  }
 
-  const merged = mergePlaceVolumes(
-    full && full.total > 0 ? full : null,
-    short && short.total > 0 ? short : null
-  );
-  const best =
-    merged ??
-    findBestVolumeByPlaceName(placeName, volumes) ??
-    (brandSearchKeyword
-      ? findBestVolumeByPlaceName(brandSearchKeyword, volumes)
-      : null);
+  const shortKeyword = stripMedicalSuffix(normalizedBase);
 
   if (best) {
     return {
       full: best,
       short: null,
-      shortKeyword: best.keyword,
+      shortKeyword: bestKey ?? best.keyword,
     };
   }
 

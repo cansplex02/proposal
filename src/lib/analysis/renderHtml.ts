@@ -426,9 +426,12 @@ function renderSearchResultsCore(
   const channelTable = renderChannelTable(matrix);
 
   return `<div class="search-grid">
-    <div class="card">
-      <div class="search-chart-title">브랜드 검색량 비교 (상호+진료과명 합산, PC/모바일)</div>
-      <div class="hbar-list">${rows}</div>
+    <div class="search-chart-col">
+      <div class="card">
+        <div class="search-chart-title">브랜드 검색량 비교 (상호+진료과명 합산, PC/모바일)</div>
+        <div class="hbar-list">${rows}</div>
+      </div>
+      <p class="search-volume-footnote">* 네트워크 병/의원은 통합검색량으로 조회됩니다.</p>
     </div>
     <div class="insight-cards">${insights}</div>
   </div>
@@ -477,6 +480,13 @@ function renderChannelTable(matrix: ChannelRow[]): string {
   )
     ? `<p class="channel-table-note">일부 채널은 API 미연동·조회 실패로 비어 있을 수 있습니다.</p>`
     : "";
+  const triangleLegend = matrix.some((r) =>
+    [r.homepage, r.blog, r.cafe, r.news, r.kin, r.sns, r.video].some(
+      (v) => v === "△"
+    )
+  )
+    ? `<p class="channel-table-legend">* △ : 자체 채널은 없으나, 검색 결과에 병원명·지도 정보가 노출된 경우</p>`
+    : "";
 
   return `<div class="card">
     <div class="card-label">채널 운영 비교</div>
@@ -497,6 +507,7 @@ function renderChannelTable(matrix: ChannelRow[]): string {
         ${body}
       </tbody>
     </table>
+    ${triangleLegend}
     ${pendingNote}
   </div>`;
 }

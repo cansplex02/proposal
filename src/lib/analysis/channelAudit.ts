@@ -11,6 +11,7 @@ import {
   isNaverOpenSearchConfigured,
   naverSearch,
   toSearchHits,
+  type NaverSearchEndpoint,
 } from "./naverOpenSearch";
 import type { AnalysisReport } from "./types";
 
@@ -18,22 +19,50 @@ export type ChannelRow = NonNullable<
   NonNullable<AnalysisReport["search"]>["channelMatrix"]
 >[number];
 
+async function safeNaverSearch(
+  endpoint: NaverSearchEndpoint,
+  query: string,
+  display = 10
+): Promise<{ total: number; items: import("./naverOpenSearch").NaverSearchItem[] }> {
+  try {
+    return await naverSearch(endpoint, query, display);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn(`[channel] ${endpoint} 조회 실패 (${query}):`, msg);
+    return { total: 0, items: [] };
+  }
+}
+
 async function auditOneHospital(
   hospital: string
 ): Promise<Omit<ChannelRow, "hospital" | "isOurs">> {
   const q = hospital.replace(/\s+/g, " ").trim();
 
-  const blog = await naverSearch("blog", q, 10);
-  await delay(250);
-  const news = await naverSearch("news", q, 10);
-  await delay(250);
-  const kin = await naverSearch("kin", q, 10);
-  await delay(250);
-  const cafe = await naverSearch("cafearticle", q, 10);
-  await delay(250);
-  const web = await naverSearch("webkr", `${q} 홈페이지`, 10);
-  await delay(250);
-  const local = await fetchLocalSearchPlaces(q, 3);
+  const blog = await safeNaverSearch("blog", q, 10);
+  await delay(200);
+  const news = await safeNaverSearch("news", q, 10);
+  await delay(200);
+  const kin = await safeNaverSearch("kin", q, 10);
+  await delay(200);
+  const cafe = await safeNaverSearch("cafearticle", q, 10);
+  await delay(200);
+  const webHp = await safeNaverSearch("webkr", `${q} 홈페이지`, 10);
+  await delay(200);
+  const webName = await safeNaverSearch("webkr", q, 10);
+  await delay(200);
+  const shortQ = q.replace(/(의원|병원|클리닉)$/u, "").trim();
+  const webShort =
+    shortQ.length >= 2 && shortQ !== q
+      ? await safeNaverSearch("webkr", `${shortQ} 홈페이지`, 10)
+      : { items: [] };
+  await delay(200);
+  let local: { title: string; link: string }[] = [];
+  try {
+    local = await fetchLocalSearchPlaces(q, 3);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn(`[channel] 지역검색 실패 (${q}):`, msg);
+  }
 
   const blogMark = markBlogFromHits(toSearchHits(blog.items, "blog"), q);
   const newsMark = markChannelFromHits(toSearchHits(news.items, "news"), q, {
@@ -44,7 +73,11 @@ async function auditOneHospital(
 
   const homepage = resolveHomepageMark(
     local,
-    toSearchHits(web.items, "webkr"),
+    mergeWebSearchHits(
+      toSearchHits(webHp.items, "webkr"),
+      toSearchHits(webName.items, "webkr"),
+      toSearchHits(webShort.items, "webkr")
+    ),
     q
   );
   const sns = markSnsFromHits(
@@ -81,6 +114,7 @@ function resolveHomepageMark(
   const fromWeb = markHomepageFromWebHits(webHits, hospital);
 
   if (fromLocal === "O" || fromWeb === "O") return "O";
+  if (fromLocal === "△" || fromWeb === "△") return "O";
   return "X";
 }
 
@@ -146,6 +180,20 @@ function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function mergeWebSearchHits(...groups: SearchHit[][]): SearchHit[] {
+  const seen = new Set<string>();
+  const out: SearchHit[] = [];
+  for (const group of groups) {
+    for (const hit of group) {
+      const key = (hit.links?.[0] ?? hit.title).toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(hit);
+    }
+  }
+  return out;
+}
+
 /** 경쟁사·우리 병원별 채널 O/X/△ */
 export async function auditChannelMatrix(
   hospitals: { name: string; isOurs?: boolean }[]
@@ -157,27 +205,13 @@ export async function auditChannelMatrix(
   const rows: ChannelRow[] = [];
 
   for (const h of hospitals) {
-    try {
-      const channels = await auditOneHospital(h.name);
-      rows.push({
-        hospital: h.name,
-        isOurs: h.isOurs,
-        ...channels,
-      });
-    } catch {
-      rows.push({
-        hospital: h.name,
-        isOurs: h.isOurs,
-        homepage: "—",
-        blog: "—",
-        cafe: "—",
-        news: "—",
-        kin: "—",
-        sns: "—",
-        video: "—",
-      });
-    }
-    await delay(400);
+    const channels = await auditOneHospital(h.name);
+    rows.push({
+      hospital: h.name,
+      isOurs: h.isOurs,
+      ...channels,
+    });
+    await delay(300);
   }
 
   return rows;

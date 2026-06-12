@@ -168,15 +168,29 @@ export async function buildAutoSearchSection(
   });
 
   let channelMatrix = buildChannelMatrixSkeleton(competitors);
+  let channelAuditNote: string | undefined;
 
-  if (isNaverOpenSearchConfigured()) {
+  if (!isNaverOpenSearchConfigured()) {
+    channelAuditNote =
+      "NAVER_OPEN_API_CLIENT_ID·SECRET 미설정 — developers.naver.com 검색 API 키를 .env.local에 추가하세요.";
+  } else {
     try {
       channelMatrix = await auditChannelMatrix(
         competitors.map((c) => ({ name: c.name, isOurs: c.isOurs }))
       );
+      const allPending = channelMatrix.every((r) =>
+        [r.homepage, r.blog, r.cafe, r.news, r.kin, r.sns, r.video].every(
+          (v) => v === "—" || v === "-"
+        )
+      );
+      if (allPending) {
+        channelAuditNote =
+          "채널 API 조회에 실패했습니다. 네이버 검색 API 키·일일 할당량(429)을 확인하세요.";
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.warn("[channel] audit partial/failed:", msg);
+      channelAuditNote = msg;
     }
   }
 
@@ -201,6 +215,7 @@ export async function buildAutoSearchSection(
       volumeMatchedCount,
       volumeFetchError,
       searchAdConfigured: isNaverSearchAdConfigured(),
+      channelAuditNote,
     },
   };
 }

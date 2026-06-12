@@ -320,11 +320,22 @@ function urlLooksLikeOwnChannel(
   return false;
 }
 
+/** http/https 없이 오는 URL도 홈페이지 판정에 쓸 수 있게 정규화 */
+export function normalizeHomepageUrl(url: string): string | null {
+  const raw = url.trim();
+  if (!raw) return null;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith("//")) return `http:${raw}`;
+  if (/^[\w가-힣.-]+\.[a-z]{2,}/i.test(raw)) return `http://${raw}`;
+  return null;
+}
+
 export function isOfficialHomepage(url: string): boolean {
-  if (!url || /map\.naver|naver\.me|place\.naver|pcmap\.place/i.test(url)) {
+  const norm = normalizeHomepageUrl(url);
+  if (!norm || /map\.naver|naver\.me|place\.naver|pcmap\.place/i.test(norm)) {
     return false;
   }
-  return /^https?:\/\//i.test(url);
+  return /^https?:\/\//i.test(norm);
 }
 
 export function isMapPlaceLink(url: string): boolean {
@@ -333,14 +344,15 @@ export function isMapPlaceLink(url: string): boolean {
 
 /** 웹검색 홈페이지 후보에서 제외할 포털·SNS·예약·뉴스·블로그 등 */
 const HOMEPAGE_EXCLUDED_HOST_RE =
-  /(^|\.)((naver|daum|kakao|google|youtube|youtu|instagram|facebook|twitter|x|tistory|blogspot|wikipedia|namu)\.|blog\.naver|cafe\.naver|map\.naver|place\.naver|pcmap\.place)|(gooddoc|ddocdoc|yeoshin|gangnamunni|babitalk|docdoc|mogok|hospital|jobkorea|saramin|incruit|albamon|worknet|yelp|tripadvisor)/i;
+  /(^|\.)((naver|daum|kakao|google|youtube|youtu|instagram|facebook|twitter|x|tistory|blogspot|wikipedia|namu)\.|blog\.naver|cafe\.naver|map\.naver|place\.naver|pcmap\.place)|(gooddoc|ddocdoc|yeoshin|gangnamunni|babitalk|docdoc|mogok|jobkorea|saramin|incruit|albamon|worknet|yelp|tripadvisor)/i;
 
 export function isExcludedHomepageHost(url: string): boolean {
-  if (!url) return true;
-  if (isMapPlaceLink(url)) return true;
-  if (/blog\.naver\.com|cafe\.naver\.com/i.test(url)) return true;
+  const norm = normalizeHomepageUrl(url);
+  if (!norm) return true;
+  if (isMapPlaceLink(norm)) return true;
+  if (/blog\.naver\.com|cafe\.naver\.com/i.test(norm)) return true;
   try {
-    const host = new URL(url).hostname.replace(/^www\./i, "");
+    const host = new URL(norm).hostname.replace(/^www\./i, "");
     return HOMEPAGE_EXCLUDED_HOST_RE.test(host);
   } catch {
     return true;
@@ -350,6 +362,75 @@ export function isExcludedHomepageHost(url: string): boolean {
 function hostnameCoreMatch(hostname: string, core: string[]): boolean {
   const h = hostname.replace(/^www\./i, "").toLowerCase();
   return core.some((c) => c.length >= 3 && h.includes(c));
+}
+
+function extractBrandFromHospital(hospitalName: string): string | null {
+  const compact = hospitalName.replace(/\s+/g, "");
+  let bare = compact.replace(
+    /(의원|병원|클리닉|센터|의료원|한의원|치과)$/u,
+    ""
+  );
+  bare = bare.replace(
+    /(교대역점|강남점|본점|분점|[가-힣]{2,6}역점|[가-힣]{2,6}점)$/u,
+    ""
+  );
+  bare = bare.replace(MEDICAL_SUFFIX_FOR_BRAND, "");
+  return extractBrandCore(bare || compact);
+}
+
+/** 한글 브랜드 ↔ 영문 도메인 (bonboneos↔본본, okclinic↔오케이 등) */
+function latinHostAliasesForBrand(brand: string): string[] {
+  const aliases = new Set<string>();
+  const b = brand.replace(/\s+/g, "");
+
+  if (/오케이|오키/u.test(b)) {
+    for (const a of ["okclinic", "okjoint", "okos", "okay", "okey", "ok"]) {
+      aliases.add(a);
+    }
+  }
+  if (/본본/u.test(b)) {
+    for (const a of ["bonboneos", "bonbone", "bonbon", "bonb"]) {
+      aliases.add(a);
+    }
+  }
+
+  const syllables = b.match(/[가-힣]+/g) ?? [];
+  if (syllables.length === 2 && syllables[0] === syllables[1]) {
+    const s = syllables[0];
+    if (s === "본본") {
+      aliases.add("bonbone");
+      aliases.add("bonbon");
+    }
+  }
+
+  return [...aliases].filter((a) => a.length >= 2);
+}
+
+/** 도메인에 한글 브랜드 또는 흔한 영문 표기가 포함되는지 */
+function hostnameMatchesBrand(
+  hostname: string,
+  hospitalName: string,
+  core: string[]
+): boolean {
+  const h = hostname.replace(/^www\./i, "").toLowerCase();
+  const stem = h.split(".")[0];
+
+  if (hostnameCoreMatch(hostname, core)) return true;
+  if (core.some((c) => c.length >= 4 && h.includes(c))) return true;
+
+  const brand = extractBrandFromHospital(hospitalName);
+  if (!brand) return false;
+
+  for (const alias of latinHostAliasesForBrand(brand)) {
+    if (alias.length >= 2 && (h.includes(alias) || stem.startsWith(alias))) {
+      return true;
+    }
+  }
+
+  if (/^오케이|^오키/u.test(brand) && /^ok[a-z0-9]/i.test(stem)) return true;
+  if (brand.includes("본본") && /bonbon/i.test(stem)) return true;
+
+  return false;
 }
 
 /**
@@ -367,31 +448,30 @@ export function markHomepageFromWebHits(
   let weak = false;
 
   for (const hit of hits) {
-    const url = hit.links[0] ?? "";
-    if (!isOfficialHomepage(url) || isExcludedHomepageHost(url)) continue;
-
     const title = stripHtml(hit.title);
     const desc = stripHtml(hit.description);
     const nameInText =
       titleMatchesHospital(title, core, hospitalName) ||
       textMatchesHospital(desc, core, hospitalName);
 
-    if (!nameInText) continue;
+    for (const rawUrl of hit.links) {
+      const url = normalizeHomepageUrl(rawUrl);
+      if (!url || !isOfficialHomepage(url) || isExcludedHomepageHost(url)) {
+        continue;
+      }
 
-    let host = "";
-    try {
-      host = new URL(url).hostname;
-    } catch {
-      continue;
+      let host = "";
+      try {
+        host = new URL(url).hostname;
+      } catch {
+        continue;
+      }
+
+      const strongUrl = hostnameMatchesBrand(host, hospitalName, core);
+
+      if (strongUrl) return "O";
+      if (nameInText) weak = true;
     }
-
-    const urlBlob = url.toLowerCase();
-    const strongUrl =
-      hostnameCoreMatch(host, core) ||
-      core.some((c) => c.length >= 4 && urlBlob.includes(c));
-
-    if (strongUrl) return "O";
-    weak = true;
   }
 
   return weak ? "△" : "X";
@@ -405,8 +485,9 @@ export function markHomepageFromLocal(
   const hit = local.find((p) => titlesMatchPlace(p.title, hospital));
   if (!hit?.link) return "X";
 
-  if (isMapPlaceLink(hit.link)) return "X";
-  if (isOfficialHomepage(hit.link)) return "O";
+  const link = normalizeHomepageUrl(hit.link) ?? hit.link;
+  if (isMapPlaceLink(link)) return "X";
+  if (isOfficialHomepage(link)) return "O";
   return "△";
 }
 

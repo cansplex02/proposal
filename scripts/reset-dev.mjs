@@ -17,7 +17,7 @@ function killPort(port) {
   }
 }
 
-for (const port of [3000, 3001]) {
+for (const port of [3000, 3001, 3002]) {
   killPort(port);
 }
 

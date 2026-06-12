@@ -51,15 +51,17 @@ export default function AnalysisSearchResults({ data, mapQuery }: Props) {
       (v) => v === "—" || v === "-"
     )
   );
+  const hasTriangle = matrix.some((r) =>
+    [r.homepage, r.blog, r.cafe, r.news, r.kin, r.sns, r.video].some(
+      (v) => v === "△"
+    )
+  );
 
   return (
     <>
       {query ? (
         <p className="analysis-search-query-note">
           네이버 지도 검색: <strong>{query}</strong> · 경쟁병원 {rivals.length}곳
-          {data.meta?.radiusMetersUsed
-            ? ` · 반경 ${(data.meta.radiusMetersUsed / 1000).toFixed(1)}km`
-            : ""}
         </p>
       ) : null}
 
@@ -71,45 +73,50 @@ export default function AnalysisSearchResults({ data, mapQuery }: Props) {
       ) : null}
 
       <div className="search-grid">
-        <div className="card">
-          <div className="search-chart-title">
-            브랜드 검색량 비교 (네이버 검색광고 월간, PC+모바일)
-          </div>
-          {chartRows.length === 0 && rivals.length > 0 ? (
-            <p className="analysis-search-warn">
-              {data.meta?.volumeFetchError
-                ? `브랜드 검색량: ${data.meta.volumeFetchError}`
-                : data.meta?.searchAdConfigured === false
-                  ? "브랜드 검색량: NAVER_SEARCHAD_CUSTOMER_ID·API_KEY·SECRET_KEY를 .env.local 또는 Vercel 환경 변수에 설정하세요."
-                  : `브랜드 검색량: 병원명 키워드 매칭 없음 (경쟁 ${rivals.length}곳, 검색량 표시 0곳). 키워드 도구에서 상호를 직접 조회해 비교하세요.`}
-            </p>
-          ) : null}
-          <div className="hbar-list">
-            {chartRows.map((c) => {
-              const barW = searchVolumeBarWidth(c.volume, max);
-              return (
-                <div
-                  key={c.name}
-                  className={c.isOurs ? "hbar-row our" : "hbar-row"}
-                >
-                  <div className="hbar-name">{c.name}</div>
-                  <div className="hbar-track">
-                    <div
-                      className="hbar-fill"
-                      style={{ width: `${barW}%` }}
-                    />
+        <div className="search-chart-col">
+          <div className="card">
+            <div className="search-chart-title">
+              브랜드 검색량 비교 (네이버 검색광고 월간, PC+모바일)
+            </div>
+            {chartRows.length === 0 && rivals.length > 0 ? (
+              <p className="analysis-search-warn">
+                {data.meta?.volumeFetchError
+                  ? `브랜드 검색량: ${data.meta.volumeFetchError}`
+                  : data.meta?.searchAdConfigured === false
+                    ? "브랜드 검색량: NAVER_SEARCHAD_CUSTOMER_ID·API_KEY·SECRET_KEY를 .env.local 또는 Vercel 환경 변수에 설정하세요."
+                    : `브랜드 검색량: 병원명 키워드 매칭 없음 (경쟁 ${rivals.length}곳, 검색량 표시 0곳). 키워드 도구에서 상호를 직접 조회해 비교하세요.`}
+              </p>
+            ) : null}
+            <div className="hbar-list">
+              {chartRows.map((c) => {
+                const barW = searchVolumeBarWidth(c.volume, max);
+                return (
+                  <div
+                    key={c.name}
+                    className={c.isOurs ? "hbar-row our" : "hbar-row"}
+                  >
+                    <div className="hbar-name">{c.name}</div>
+                    <div className="hbar-track">
+                      <div
+                        className="hbar-fill"
+                        style={{ width: `${barW}%` }}
+                      />
+                    </div>
+                    <span className="hbar-value">{formatNumber(c.volume)}</span>
                   </div>
-                  <span className="hbar-value">{formatNumber(c.volume)}</span>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+            {missingVolume > 0 && chartRows.length > 0 ? (
+              <p className="analysis-search-hint" style={{ marginTop: 12 }}>
+                검색량 미조회 {missingVolume}곳은 막대에서 제외했습니다 (상호·API
+                키워드 불일치).
+              </p>
+            ) : null}
           </div>
-          {missingVolume > 0 && chartRows.length > 0 ? (
-            <p className="analysis-search-hint" style={{ marginTop: 12 }}>
-              검색량 미조회 {missingVolume}곳은 막대에서 제외했습니다 (상호·API
-              키워드 불일치).
-            </p>
-          ) : null}
+          <p className="search-volume-footnote">
+            * 네트워크 병/의원은 통합검색량으로 조회됩니다.
+          </p>
         </div>
 
         <div className="insight-cards">
@@ -157,7 +164,16 @@ export default function AnalysisSearchResults({ data, mapQuery }: Props) {
             ))}
           </tbody>
         </table>
-        {hasPending ? (
+        {hasTriangle ? (
+          <p className="channel-table-legend">
+            * △ : 자체 채널은 없으나, 검색 결과에 병원명·지도 정보가 노출된 경우
+          </p>
+        ) : null}
+        {data.meta?.channelAuditNote ? (
+          <p className="analysis-search-warn" style={{ marginTop: 12 }}>
+            {data.meta.channelAuditNote}
+          </p>
+        ) : hasPending ? (
           <p className="channel-table-note">
             일부 채널은 API 미연동·조회 실패로 비어 있을 수 있습니다.
           </p>

@@ -687,6 +687,20 @@
     gap: 24px;
     margin-bottom: 32px;
   }
+  .search-chart-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  .search-volume-footnote {
+    margin: 0;
+    padding: 0 4px;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.45;
+    text-align: right;
+  }
 
   /* 가로 막대 차트 */
   .search-chart-title {
@@ -825,6 +839,14 @@
     font-size: 12px;
     color: #64748b;
     line-height: 1.5;
+  }
+  .channel-table-legend {
+    margin: 10px 16px 0;
+    padding: 0 4px;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.45;
+    text-align: right;
   }
 
   /* ============ 섹션 4 · 키워드 지도 ============ */

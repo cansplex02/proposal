@@ -113,6 +113,7 @@ export type AnalysisReport = {
       volumeMatchedCount?: number;
       volumeFetchError?: string;
       searchAdConfigured?: boolean;
+      channelAuditNote?: string;
     };
     channelMatrix?: {
       hospital: string;
