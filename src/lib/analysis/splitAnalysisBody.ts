@@ -1,3 +1,4 @@
+const SECTION1_START = "<!-- ============ 섹션 1 · 인구 현황 ============ -->";
 const SEARCH_SECTION_START = "<!-- ============ 섹션 3 · 검색량 ============ -->";
 const KEYWORDS_SECTION_START =
   "<!-- ============ 섹션 4 · 키워드 지도 ============ -->";
@@ -111,4 +112,40 @@ export function splitAnalysisBody(html: string): {
 /** 생성된 전체 body HTML에서 섹션 03 차트·채널 블록만 추출 */
 export function extractSearchBodyFromHtml(html: string): string {
   return splitAnalysisBody(html).searchBody;
+}
+
+const HERO_SUB_RE = /<p class="hero-sub">[\s\S]*?<\/p>/;
+
+/** 네비+히어로 / 섹션01·02 분리 */
+export function splitNavHeroAndDemographics(html: string): {
+  navHero: string;
+  demographicsMarket: string;
+} {
+  const s1 = html.indexOf(SECTION1_START);
+  if (s1 < 0) {
+    return { navHero: html, demographicsMarket: "" };
+  }
+  return {
+    navHero: html.slice(0, s1),
+    demographicsMarket: html.slice(s1),
+  };
+}
+
+export function patchHeroSub(navHero: string, address: string, radiusKm: number): string {
+  const sub = `<p class="hero-sub">
+      <strong>${escapeHtmlLite(address)}</strong> 중심<br>
+      반경 ${radiusKm}km 인구·상권 분석 결과
+    </p>`;
+  if (HERO_SUB_RE.test(navHero)) {
+    return navHero.replace(HERO_SUB_RE, sub);
+  }
+  return navHero;
+}
+
+function escapeHtmlLite(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

@@ -71,6 +71,8 @@ export type AnalysisInput = {
   regions?: string[];
   /** 키워드 주제 열 (예: 유방외과, 유방초음파) — 미입력 시 진료과 템플릿 사용 */
   keywordTopics?: string[];
+  /** 키워드 주제 필터 — 기본 비수술 */
+  treatmentMode?: "surgery" | "nonsurgery";
   radiusMeters?: number;
   /** sbiz365/수동 입력으로 덮어쓸 섹션 */
   overrides?: Partial<AnalysisReport>;
@@ -148,4 +150,18 @@ export type SearchGeneratedPayload = {
   competitors?: NonNullable<AnalysisReport["search"]>["competitors"];
   insights?: NonNullable<AnalysisReport["search"]>["insights"];
   channelMatrix?: NonNullable<AnalysisReport["search"]>["channelMatrix"];
+  /** 섹션 01·02 (인구·상권) — 생성 시 갱신 */
+  beforeSearchHtml?: string;
+  /** 인구 갱신 요약 (상태 메시지용) */
+  populationSummary?: string;
+  resolvedAddress?: string;
+  /** 섹션 04 키워드 */
+  keywords?: AnalysisReport["keywords"];
+  keywordRegions?: string[];
+  /** 섹션 04 재계산용 */
+  formContext?: {
+    specialty: string;
+    focusTopics: string;
+    treatmentMode: "surgery" | "nonsurgery";
+  };
 };

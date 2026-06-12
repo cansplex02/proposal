@@ -3,7 +3,15 @@ import path from "path";
 import type { AnalysisReport, PopulationRow } from "./types";
 import { buildChannelMatrixSkeleton } from "./buildAutoSearch";
 import { KEYWORD_PROPOSAL_NOTICE } from "./keywords";
-import { formatNumber, pct } from "./utils";
+import {
+  splitAnalysisBody,
+  splitNavHeroAndDemographics,
+} from "./splitAnalysisBody";
+import {
+  buildSbiz365MarketMapEmbedUrl,
+  sbiz365MarketMapExternalUrl,
+} from "./sbiz365MarketMap";
+import { formatNumber, pct, searchVolumeBarWidth } from "./utils";
 
 const contentDir = path.join(process.cwd(), "src", "content");
 
@@ -53,6 +61,16 @@ export function renderAnalysisHtml(
   return html;
 }
 
+/** 섹션 01·02(인구·상권) HTML — 지역 검색 전용 */
+export function renderRegionDemographicsMarketHtml(
+  report: AnalysisReport,
+  template = loadAnalysisTemplate()
+): string {
+  const html = renderAnalysisHtml(report, template);
+  return splitNavHeroAndDemographics(splitAnalysisBody(html).beforeSearch)
+    .demographicsMarket;
+}
+
 function replaceBlock(html: string, name: string, inner: string): string {
   const re = new RegExp(
     `<!-- ANALYSIS:${name}:START -->[\\s\\S]*?<!-- ANALYSIS:${name}:END -->`,
@@ -80,33 +98,62 @@ function renderPopulationSection(r: AnalysisReport): string {
   </div>`;
 }
 
+function peakHighlightIndices(values: number[]): Set<number> {
+  const max = Math.max(...values, 0);
+  const peaks = new Set<number>();
+  if (max <= 0) return peaks;
+  values.forEach((v, i) => {
+    if (v === max) peaks.add(i);
+  });
+  return peaks;
+}
+
+const AGE_COL_START = 3;
+const NO_PEAK = new Set<number>();
+
+/** 연령대별 인구수 열(인덱스 3~)만 최댓값 강조 */
+function agePeakHighlightIndices(ageValues: number[]): Set<number> {
+  const peaks = peakHighlightIndices(ageValues);
+  const cols = new Set<number>();
+  peaks.forEach((i) => cols.add(i + AGE_COL_START));
+  return cols;
+}
+
+function popCell(
+  idx: number,
+  text: string,
+  peaks: Set<number>
+): string {
+  return peaks.has(idx) ? `<td class="highlight">${text}</td>` : `<td>${text}</td>`;
+}
+
 function populationCard(
   label: string,
   row: PopulationRow,
   variant: "home" | "work"
 ): string {
-  const peakIdx = [
-    row.ages.under10,
-    row.ages.teens,
-    row.ages.twentiesThirties,
-    row.ages.fortiesFifties,
-    row.ages.sixtiesPlus,
-  ].indexOf(
-    Math.max(
-      row.ages.under10,
-      row.ages.teens,
-      row.ages.twentiesThirties,
-      row.ages.fortiesFifties,
-      row.ages.sixtiesPlus
-    )
-  );
-
-  const hl = (i: number) => (i === peakIdx ? ' class="highlight"' : "");
-
   if (variant === "work") {
     const t = row.ages.twentiesThirties;
     const approx30 = Math.round(t * 0.58);
     const approx20 = t - approx30;
+    const fortiesHalf = Math.round(row.ages.fortiesFifties * 0.5);
+    const ageCountVals = [
+      approx20,
+      approx30,
+      fortiesHalf,
+      fortiesHalf,
+      row.ages.sixtiesPlus,
+    ];
+    const peaks = agePeakHighlightIndices(ageCountVals);
+    const ageRatioVals = [
+      Number(pct(approx20, row.total)),
+      Number(pct(approx30, row.total)),
+      Number(pct(fortiesHalf, row.total)),
+      Number(pct(fortiesHalf, row.total)),
+      Number(pct(row.ages.sixtiesPlus, row.total)),
+    ];
+    const ratioPeaks = agePeakHighlightIndices(ageRatioVals);
+
     return `<div class="card">
       <div class="card-label">${label}</div>
       <div class="pop-card-inner"><div>
@@ -118,25 +165,48 @@ function populationCard(
           <tbody>
             <tr>
               <td class="label">인구(명)</td>
-              <td>${formatNumber(row.total)}</td><td>${formatNumber(row.male)}</td><td>${formatNumber(row.female)}</td>
-              <td>${formatNumber(approx20)}</td><td${hl(1)}>${formatNumber(approx30)}</td>
-              <td>${formatNumber(Math.round(row.ages.fortiesFifties * 0.5))}</td>
-              <td>${formatNumber(Math.round(row.ages.fortiesFifties * 0.5))}</td>
-              <td>${formatNumber(row.ages.sixtiesPlus)}</td>
+              ${popCell(0, formatNumber(row.total), NO_PEAK)}
+              ${popCell(1, formatNumber(row.male), NO_PEAK)}
+              ${popCell(2, formatNumber(row.female), NO_PEAK)}
+              ${popCell(3, formatNumber(approx20), peaks)}
+              ${popCell(4, formatNumber(approx30), peaks)}
+              ${popCell(5, formatNumber(fortiesHalf), peaks)}
+              ${popCell(6, formatNumber(fortiesHalf), peaks)}
+              ${popCell(7, formatNumber(row.ages.sixtiesPlus), peaks)}
             </tr>
             <tr>
               <td class="label">비율(%)</td>
-              <td>100</td><td>${pct(row.male, row.total)}</td><td>${pct(row.female, row.total)}</td>
-              <td>${pct(approx20, row.total)}</td><td${hl(1)}>${pct(approx30, row.total)}</td>
-              <td>${pct(row.ages.fortiesFifties * 0.5, row.total)}</td>
-              <td>${pct(row.ages.fortiesFifties * 0.5, row.total)}</td>
-              <td>${pct(row.ages.sixtiesPlus, row.total)}</td>
+              ${popCell(0, "100", NO_PEAK)}
+              ${popCell(1, pct(row.male, row.total), NO_PEAK)}
+              ${popCell(2, pct(row.female, row.total), NO_PEAK)}
+              ${popCell(3, pct(approx20, row.total), ratioPeaks)}
+              ${popCell(4, pct(approx30, row.total), ratioPeaks)}
+              ${popCell(5, pct(fortiesHalf, row.total), ratioPeaks)}
+              ${popCell(6, pct(fortiesHalf, row.total), ratioPeaks)}
+              ${popCell(7, pct(row.ages.sixtiesPlus, row.total), ratioPeaks)}
             </tr>
           </tbody>
         </table>
       </div></div>
     </div>`;
   }
+
+  const ageCountVals = [
+    row.ages.under10,
+    row.ages.teens,
+    row.ages.twentiesThirties,
+    row.ages.fortiesFifties,
+    row.ages.sixtiesPlus,
+  ];
+  const peaks = agePeakHighlightIndices(ageCountVals);
+  const ageRatioVals = [
+    Number(pct(row.ages.under10, row.total)),
+    Number(pct(row.ages.teens, row.total)),
+    Number(pct(row.ages.twentiesThirties, row.total)),
+    Number(pct(row.ages.fortiesFifties, row.total)),
+    Number(pct(row.ages.sixtiesPlus, row.total)),
+  ];
+  const ratioPeaks = agePeakHighlightIndices(ageRatioVals);
 
   return `<div class="card">
     <div class="card-label">${label}</div>
@@ -149,24 +219,58 @@ function populationCard(
         <tbody>
           <tr>
             <td class="label">인구(명)</td>
-            <td>${formatNumber(row.total)}</td><td>${formatNumber(row.male)}</td><td>${formatNumber(row.female)}</td>
-            <td>${formatNumber(row.ages.under10)}</td><td>${formatNumber(row.ages.teens)}</td>
-            <td${hl(2)}>${formatNumber(row.ages.twentiesThirties)}</td>
-            <td>${formatNumber(row.ages.fortiesFifties)}</td>
-            <td${hl(4)}>${formatNumber(row.ages.sixtiesPlus)}</td>
+            ${popCell(0, formatNumber(row.total), NO_PEAK)}
+            ${popCell(1, formatNumber(row.male), NO_PEAK)}
+            ${popCell(2, formatNumber(row.female), NO_PEAK)}
+            ${popCell(3, formatNumber(row.ages.under10), peaks)}
+            ${popCell(4, formatNumber(row.ages.teens), peaks)}
+            ${popCell(5, formatNumber(row.ages.twentiesThirties), peaks)}
+            ${popCell(6, formatNumber(row.ages.fortiesFifties), peaks)}
+            ${popCell(7, formatNumber(row.ages.sixtiesPlus), peaks)}
           </tr>
           <tr>
             <td class="label">비율(%)</td>
-            <td>100</td><td>${pct(row.male, row.total)}</td><td>${pct(row.female, row.total)}</td>
-            <td>${pct(row.ages.under10, row.total)}</td><td>${pct(row.ages.teens, row.total)}</td>
-            <td${hl(2)}>${pct(row.ages.twentiesThirties, row.total)}</td>
-            <td>${pct(row.ages.fortiesFifties, row.total)}</td>
-            <td${hl(4)}>${pct(row.ages.sixtiesPlus, row.total)}</td>
+            ${popCell(0, "100", NO_PEAK)}
+            ${popCell(1, pct(row.male, row.total), NO_PEAK)}
+            ${popCell(2, pct(row.female, row.total), NO_PEAK)}
+            ${popCell(3, pct(row.ages.under10, row.total), ratioPeaks)}
+            ${popCell(4, pct(row.ages.teens, row.total), ratioPeaks)}
+            ${popCell(5, pct(row.ages.twentiesThirties, row.total), ratioPeaks)}
+            ${popCell(6, pct(row.ages.fortiesFifties, row.total), ratioPeaks)}
+            ${popCell(7, pct(row.ages.sixtiesPlus, row.total), ratioPeaks)}
           </tr>
         </tbody>
       </table>
     </div></div>
   </div>`;
+}
+
+function escapeAttr(s: string): string {
+  return escapeHtml(s).replace(/"/g, "&quot;");
+}
+
+function renderMarketMap(r: AnalysisReport): string {
+  const { lat, lng } = r.coordinates;
+  const radiusMeters = Math.round(r.radiusKm * 1000);
+  const embedUrl =
+    buildSbiz365MarketMapEmbedUrl({ lat, lng, radiusMeters }) ?? "";
+  const externalUrl =
+    sbiz365MarketMapExternalUrl({ lat, lng, radiusMeters }) ??
+    "https://bigdata.sbiz.or.kr/";
+
+  return `<div
+      id="analysis-market-map-slot"
+      class="map-area map-area--slot"
+      data-lat="${lat}"
+      data-lng="${lng}"
+      data-radius-km="${r.radiusKm}"
+      data-address="${escapeAttr(r.address)}"
+      data-map-note="${escapeAttr(r.market.mapNote || "")}"
+      data-embed-url="${escapeAttr(embedUrl)}"
+      data-external-url="${escapeAttr(externalUrl)}"
+    >
+      <div class="map-area-loading">소상공인365 상권지도 불러오는 중…</div>
+    </div>`;
 }
 
 function renderMarketSection(r: AnalysisReport): string {
@@ -208,13 +312,7 @@ function renderMarketSection(r: AnalysisReport): string {
     </div>
     <div class="card">
       <div class="card-label">상권 기본 정보 (반경 ${r.radiusKm}km)</div>
-      <div class="map-area">
-        <div class="map-placeholder-text">
-          <div class="map-placeholder-title">${escapeHtml(r.address)}</div>
-          <div class="map-placeholder-sub">${escapeHtml(r.market.mapNote || "")}</div>
-          <div class="map-placeholder-sub">위도 ${r.coordinates.lat.toFixed(5)} · 경도 ${r.coordinates.lng.toFixed(5)}</div>
-        </div>
-      </div>
+      ${renderMarketMap(r)}
     </div>
   </div>
 
@@ -291,20 +389,21 @@ export function renderSearchUnavailableHtml(report: AnalysisReport): string {
 function renderSearchResultsCore(
   s: NonNullable<AnalysisReport["search"]>
 ): string {
-  const max = Math.max(...s.competitors.map((c) => c.volume), 1);
-  const rows = s.competitors
+  const chartRows = s.competitors.filter(
+    (c) => c.volume > 0 && !c.volumeEstimated
+  );
+  const max = Math.max(...chartRows.map((c) => c.volume), 1);
+  const rows = chartRows
     .map((c) => {
-      const pct = Math.round((c.volume / max) * 100);
-      const barW = Math.max(pct, 28);
+      const barW = searchVolumeBarWidth(c.volume, max);
       const cls = c.isOurs ? "hbar-row our" : "hbar-row";
       const val = formatNumber(c.volume);
       return `<div class="${cls}">
           <div class="hbar-name">${escapeHtml(c.name)}</div>
           <div class="hbar-track">
-            <div class="hbar-fill" style="width: ${barW}%;">
-              <span class="hbar-value">${val}</span>
-            </div>
+            <div class="hbar-fill" style="width: ${barW}%;"></div>
           </div>
+          <span class="hbar-value">${val}</span>
         </div>`;
     })
     .join("\n        ");

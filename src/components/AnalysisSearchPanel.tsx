@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { resolveSearchForDisplay } from "@/lib/analysis/normalizeSearchPayload";
 import { SPECIALTY_OPTIONS, SPECIALTY_TOPICS } from "@/lib/analysis/specialties";
 import type { SearchGeneratedPayload } from "@/lib/analysis/types";
@@ -15,6 +15,8 @@ type Props = {
   initialSpecialty?: string;
   initialClinicName?: string;
   initialAddress?: string;
+  /** 지역 검색 후 주소 동기화 */
+  syncedAddress?: string;
   /** 생성 완료 시 섹션 03 결과 (React 렌더 우선) */
   onSearchGenerated?: (payload: SearchGeneratedPayload) => void;
 };
@@ -24,11 +26,16 @@ export default function AnalysisSearchPanel({
   initialSpecialty = "",
   initialClinicName = "",
   initialAddress = "",
+  syncedAddress,
   onSearchGenerated,
 }: Props) {
   const [specialty, setSpecialty] = useState(initialSpecialty);
   const [clinicName, setClinicName] = useState(initialClinicName);
   const [address, setAddress] = useState(initialAddress);
+
+  useEffect(() => {
+    if (syncedAddress?.trim()) setAddress(syncedAddress);
+  }, [syncedAddress]);
   const [mainSearchKeyword, setMainSearchKeyword] = useState("");
   const [secret, setSecret] = useState("");
   const [loading, setLoading] = useState(false);
@@ -117,6 +124,9 @@ export default function AnalysisSearchPanel({
           slug: data.slug,
           search: search ?? undefined,
           searchBody: data.searchBody,
+          beforeSearchHtml: data.beforeSearchHtml,
+          populationSummary: data.populationSummary,
+          resolvedAddress: data.resolvedAddress,
           searchKeyword: data.searchKeyword,
           rivalCount: data.rivalCount,
           warnings: data.warnings,
@@ -144,6 +154,7 @@ export default function AnalysisSearchPanel({
           : null;
 
       const lines = [
+        data.populationSummary ?? null,
         data.searchKeyword
           ? `지도 검색: ${data.searchKeyword}`
           : null,

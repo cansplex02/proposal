@@ -1,22 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { geocodeAddress } from "@/lib/analysis/geocode";
-
-/** 입력어에서 역·동·구 이름을 바로 추출 (역 이름 입력 등 폴백) */
-function extractFromInput(input: string): string[] {
-  const hints = new Set<string>();
-  const station = input.match(/([가-힣]+역)/g);
-  station?.forEach((s) => hints.add(s));
-  const dong = input.match(/([가-힣]+동)/g);
-  dong?.forEach((d) => hints.add(d));
-  const gu = input.match(/([가-힣]+구)/g);
-  gu?.forEach((g) => hints.add(g));
-  const si = input.match(/([가-힣]+시)/g);
-  si?.forEach((s) => hints.add(s.slice(0, -1)));
-  // 상권명 대응: 강남, 홍대 등
-  const areas = input.match(/^([가-힣]{2,4})$/);
-  if (areas) hints.add(areas[1]);
-  return [...hints];
-}
+import {
+  extractRegionHintsFromInput,
+  resolveRegionsForLocation,
+} from "@/lib/analysis/resolveRegions";
 
 async function fetchNearbyStations(lat: number, lng: number): Promise<string[]> {
   // OpenStreetMap Overpass: 좌표 주변 지하철역 후보 수집
@@ -227,28 +213,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "location 파라미터가 없습니다." }, { status: 400 });
   }
 
-  // 입력 자체에서 직접 추출 (역 이름 등)
-  const inputHints = extractFromInput(location);
+  const inputHints = extractRegionHintsFromInput(location);
 
   try {
-    const geo = await geocodeAddress(location);
-    const stationHints = await fetchNearbyStations(geo.lat, geo.lng);
-    const dongHints = await fetchNearbyDongs(geo.lat, geo.lng);
-
-    // geocode 결과 + 주변 역 + 입력 힌트 합치기, 중복 제거
-    const merged = [
-      ...new Set([...inputHints, ...geo.regionHints, ...dongHints, ...stationHints]),
-    ].slice(0, 12);
-
+    const { regions, roadAddress } = await resolveRegionsForLocation(location);
     return NextResponse.json({
-      roadAddress: geo.roadAddress,
-      lat: geo.lat,
-      lng: geo.lng,
-      regions: merged,
-      provider: geo.provider,
+      roadAddress,
+      regions,
+      provider: "merged",
     });
   } catch {
-    // 주소로 찾기 실패해도 입력어에서 뽑은 힌트는 반환
     if (inputHints.length > 0) {
       return NextResponse.json({
         roadAddress: location,

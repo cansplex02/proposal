@@ -1,7 +1,6 @@
 import { geocodeAddress } from "./geocode";
-import { buildCustomFocusTopicList } from "./focusTopicExpansion";
-import { topicsForSpecialty, withCompanionTopics } from "./specialties";
-import { buildKeywordMap, buildStrategyCards } from "./keywords";
+import { buildKeywordSection } from "./buildKeywordSection";
+import { resolveRegionsForLocation } from "./resolveRegions";
 import {
   aggregateFacilities,
   countMedicalStores,
@@ -76,7 +75,7 @@ export async function buildAnalysisReport(
       }
     } else {
       warnings.push(
-        `${labels.detailAnalysis} URL 미설정 — 인구 표는 overrides 또는 수동 입력`
+        `${labels.detailAnalysis} 인증키 미설정(SBIZ365_DETAIL_KEY) — 인구 표는 overrides 또는 수동 입력`
       );
     }
 
@@ -103,25 +102,29 @@ export async function buildAnalysisReport(
     }
   } else {
     warnings.push(
-      "SBIZ365_API_KEY 미설정 — 365 데이터는 overrides 또는 수동 입력"
+      "SBIZ365_DETAIL_KEY(또는 SBIZ365_API_KEY) 미설정 — 365 인구 데이터는 overrides 또는 수동 입력"
     );
   }
 
-  const regions =
-    input.regions?.length ? input.regions : geo.regionHints.slice(0, 9);
+  let regions = input.regions?.length ? input.regions : [];
+  if (!regions.length) {
+    try {
+      const resolved = await resolveRegionsForLocation(input.address, geo);
+      regions = resolved.regions;
+    } catch {
+      regions = geo.regionHints.slice(0, 9);
+    }
+  }
+
   const focusSeeds = (input.keywordTopics ?? [])
     .map((s) => s.trim())
     .filter(Boolean);
-  const topics = (
-    focusSeeds.length
-      ? buildCustomFocusTopicList(input.specialty, focusSeeds)
-      : withCompanionTopics(input.specialty, topicsForSpecialty(input.specialty))
-  ).slice(0, 12);
-
-  const { columns, rows } = buildKeywordMap(regions, topics);
-  const strategyCards = buildStrategyCards(input.specialty, regions, topics, {
-    focusTopics: focusSeeds.length ? focusSeeds : undefined,
-  });
+  const keywords = buildKeywordSection(
+    input.specialty,
+    regions,
+    focusSeeds,
+    input.treatmentMode ?? "nonsurgery"
+  );
 
   const residential = popData.residential!;
   const workplace = popData.workplace!;
@@ -163,12 +166,7 @@ export async function buildAnalysisReport(
       ],
       mapNote: `${geo.roadAddress} 중심 반경 ${radiusMeters / 1000}km`,
     },
-    keywords: {
-      subtitle: `${regions.slice(0, 4).join("·")}권 ${input.specialty} 공략 키워드`,
-      columns,
-      rows,
-      strategyCards,
-    },
+    keywords,
     meta: {
       dataSources: [
         "소상공인시장진흥공단 상가(상권)정보 API",

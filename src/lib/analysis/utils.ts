@@ -18,6 +18,13 @@ export function formatNumber(n: number): string {
   return Math.round(n).toLocaleString("ko-KR");
 }
 
+/** 검색량 막대 너비(%) — 최댓값 대비 실제 비율 */
+export function searchVolumeBarWidth(volume: number, maxVolume: number): number {
+  if (maxVolume <= 0 || volume <= 0) return 0;
+  const pct = (volume / maxVolume) * 100;
+  return pct < 1 ? Math.round(pct * 100) / 100 : Math.round(pct * 10) / 10;
+}
+
 export function pct(part: number, total: number): string {
   if (!total) return "0";
   return (Math.round((part / total) * 1000) / 10).toFixed(1);

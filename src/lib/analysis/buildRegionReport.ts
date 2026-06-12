@@ -1,0 +1,167 @@
+import { geocodeAddress } from "./geocode";
+import {
+  aggregateFacilities,
+  countMedicalStores,
+  fetchStoresInRadius,
+} from "./sbizStore";
+import {
+  fetchDetailAnalysis,
+  isSbiz365Configured,
+  placeholderPopulation,
+} from "./sbiz365";
+import { getSbiz365Labels, listSbiz365Readiness } from "./sbiz365Config";
+import { formatNumber, peakAgeInsight } from "./utils";
+import type { AnalysisReport, PopulationRow } from "./types";
+
+const DEFAULT_RADIUS_M = 1500;
+
+export type RegionReportInput = {
+  address: string;
+  radiusMeters?: number;
+};
+
+export async function buildRegionReport(
+  input: RegionReportInput
+): Promise<AnalysisReport> {
+  const radiusMeters = input.radiusMeters ?? DEFAULT_RADIUS_M;
+  const geo = await geocodeAddress(input.address.trim());
+
+  const warnings: string[] = [];
+  let stores: Awaited<ReturnType<typeof fetchStoresInRadius>> = [];
+
+  try {
+    stores = await fetchStoresInRadius(geo.lng, geo.lat, radiusMeters);
+  } catch (e) {
+    warnings.push(
+      e instanceof Error ? e.message : "상가 API 조회 실패 — 시설 수는 0으로 표시"
+    );
+  }
+
+  const facilities = aggregateFacilities(stores);
+  const medicalCount = countMedicalStores(stores);
+
+  const sbizCtx = {
+    lat: geo.lat,
+    lng: geo.lng,
+    radiusMeters,
+    address: geo.roadAddress,
+  };
+
+  let popData = placeholderPopulation();
+  const sbizReady = listSbiz365Readiness();
+  const labels = getSbiz365Labels();
+
+  if (isSbiz365Configured()) {
+    if (sbizReady.detailAnalysis) {
+      try {
+        const fetched = await fetchDetailAnalysis(sbizCtx);
+        if (fetched) popData = { ...popData, ...fetched };
+      } catch (e) {
+        warnings.push(
+          e instanceof Error
+            ? e.message
+            : `${labels.detailAnalysis} API 실패`
+        );
+      }
+    } else {
+      warnings.push(
+        `${labels.detailAnalysis} 인증키 미설정(SBIZ365_DETAIL_KEY)`
+      );
+    }
+  } else {
+    warnings.push(
+      "SBIZ365_DETAIL_KEY 미설정 — 인구 표는 0으로 표시됩니다"
+    );
+  }
+
+  const residential = popData.residential!;
+  const workplace = popData.workplace!;
+
+  return {
+    slug: "region-preview",
+    clinicName: "",
+    address: geo.roadAddress,
+    specialty: "",
+    radiusKm: radiusMeters / 1000,
+    generatedAt: new Date().toISOString(),
+    coordinates: { lat: geo.lat, lng: geo.lng },
+    population: {
+      residential,
+      workplace,
+      floating: popData.floating,
+      insight: buildPopulationInsight(residential, workplace),
+    },
+    market: {
+      facilities,
+      summaryBullets: [
+        `<strong>주거인구:</strong> ${peakAgeInsight(residential, "주거")}`,
+        `<strong>직장인구:</strong> ${peakAgeInsight(workplace, "직장")}`,
+        `<strong>반경 ${radiusMeters / 1000}km 상가:</strong> ${formatNumber(stores.length)}개 업소 · 의료·복지 ${formatNumber(medicalCount)}개`,
+      ],
+      miniCards: [
+        {
+          title: "의료·복지 시설 밀집",
+          sub: `(${formatNumber(medicalCount)}개)`,
+        },
+        {
+          title: "상권 업소 밀도",
+          sub: `총 ${formatNumber(stores.length)}개`,
+        },
+        {
+          title: "주거+직장 혼합 수요",
+          sub:
+            residential.total && workplace.total
+              ? "소상공인365·상가 API 기준"
+              : "인구·유동 데이터 확인 권장",
+        },
+      ],
+      mapNote: `${geo.roadAddress} 중심 반경 ${radiusMeters / 1000}km`,
+    },
+    keywords: {
+      subtitle: "",
+      columns: [],
+      rows: [],
+      strategyCards: [],
+    },
+    meta: {
+      dataSources: [
+        "소상공인시장진흥공단 상가(상권)정보 API",
+        isSbiz365Configured()
+          ? "소상공인365 상세분석"
+          : "소상공인365 (미연동)",
+        "카카오/네이버 지오코딩",
+      ],
+      warnings: warnings.length ? warnings : undefined,
+    },
+  };
+}
+
+function buildPopulationInsight(
+  residential: PopulationRow,
+  workplace: PopulationRow
+): string {
+  const resPeak =
+    residential.ages.sixtiesPlus >= residential.ages.twentiesThirties
+      ? "중장년·고령"
+      : "2030";
+  const workPeak =
+    workplace.ages.twentiesThirties >= workplace.ages.fortiesFifties
+      ? "3040 직장"
+      : "혼합";
+  return `주거 <strong>${resPeak}</strong> 수요와 직장 <strong>${workPeak}</strong> 수요가 공존하는 상권으로, ${resPeak === "중장년·고령" ? "신뢰·접근성" : "검색·예약 편의"} 메시지를 병행 설계합니다.`;
+}
+
+export function regionReportSummary(report: AnalysisReport): string {
+  const r = report.population.residential;
+  const w = report.population.workplace;
+  const storeN = report.market.summaryBullets[2]?.match(/(\d[\d,]*)개 업소/)?.[1];
+  return [
+    `✓ ${report.address}`,
+    r.total
+      ? `주거 ${formatNumber(r.total)}명 · 직장 ${formatNumber(w.total)}명`
+      : null,
+    storeN ? `반경 ${report.radiusKm}km 상가 ${storeN}개` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}

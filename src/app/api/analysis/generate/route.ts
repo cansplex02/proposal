@@ -8,6 +8,7 @@ import {
   renderSearchResultsHtml,
   writeAnalysisOutputs,
 } from "@/lib/analysis/renderHtml";
+import { splitAnalysisBody } from "@/lib/analysis/splitAnalysisBody";
 import {
   suggestSlugFromAddressSpecialty,
   suggestSlugFromClinicName,
@@ -81,6 +82,7 @@ export async function POST(req: Request) {
     const report = await buildAnalysisReport(input);
     const html = renderAnalysisHtml(report);
     const searchBody = renderSearchResultsHtml(report);
+    const beforeSearchHtml = splitAnalysisBody(html).beforeSearch;
     const rivalCount =
       report.search?.competitors?.filter((c) => !c.isOurs).length ?? 0;
     const searchKeyword = report.search?.meta?.mapQuery ?? null;
@@ -109,6 +111,10 @@ export async function POST(req: Request) {
       ...(saveError ? [saveError] : []),
     ];
 
+    const populationSummary = report.population.residential.total
+      ? `↑ 섹션 01·02 갱신 — 주거 ${report.population.residential.total.toLocaleString("ko-KR")}명 · 직장 ${report.population.workplace.total.toLocaleString("ko-KR")}명`
+      : undefined;
+
     return NextResponse.json({
       ok: true,
       slug: report.slug,
@@ -117,6 +123,11 @@ export async function POST(req: Request) {
       insights: report.search?.insights ?? [],
       channelMatrix: report.search?.channelMatrix ?? [],
       searchBody,
+      beforeSearchHtml,
+      populationSummary,
+      resolvedAddress: report.address,
+      keywords: report.keywords,
+      keywordRegions: report.keywords.rows.map((r) => r.region),
       rivalCount,
       searchKeyword,
       warnings: warnings.length ? warnings : undefined,

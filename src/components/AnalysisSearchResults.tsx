@@ -1,7 +1,7 @@
 "use client";
 
 import type { AnalysisReport } from "@/lib/analysis/types";
-import { formatNumber } from "@/lib/analysis/utils";
+import { formatNumber, searchVolumeBarWidth } from "@/lib/analysis/utils";
 
 export type SearchSectionData = NonNullable<AnalysisReport["search"]>;
 
@@ -86,8 +86,7 @@ export default function AnalysisSearchResults({ data, mapQuery }: Props) {
           ) : null}
           <div className="hbar-list">
             {chartRows.map((c) => {
-              const pct = Math.round((c.volume / max) * 100);
-              const barW = Math.max(pct, 28);
+              const barW = searchVolumeBarWidth(c.volume, max);
               return (
                 <div
                   key={c.name}
@@ -98,12 +97,9 @@ export default function AnalysisSearchResults({ data, mapQuery }: Props) {
                     <div
                       className="hbar-fill"
                       style={{ width: `${barW}%` }}
-                    >
-                      <span className="hbar-value">
-                        {formatNumber(c.volume)}
-                      </span>
-                    </div>
+                    />
                   </div>
+                  <span className="hbar-value">{formatNumber(c.volume)}</span>
                 </div>
               );
             })}

@@ -35,6 +35,18 @@ export function loadSbiz365Spec(): Sbiz365SpecFile | null {
   return JSON.parse(fs.readFileSync(file, "utf8")) as Sbiz365SpecFile;
 }
 
+const API_KEY_ENV: Record<Sbiz365ApiId, string | undefined> = {
+  detailAnalysis:
+    process.env.SBIZ365_DETAIL_KEY || process.env.SBIZ365_API_KEY,
+  simpleAnalysis: process.env.SBIZ365_SIMPLE_KEY,
+  marketMap: process.env.SBIZ365_MARKET_KEY,
+};
+
+export function getSbiz365ApiKey(id: Sbiz365ApiId): string {
+  const spec = loadSbiz365Spec();
+  return API_KEY_ENV[id] || spec?.apiKey || "";
+}
+
 export function getSbiz365Credentials(): { baseUrl: string; apiKey: string } {
   const spec = loadSbiz365Spec();
   return {
@@ -42,7 +54,7 @@ export function getSbiz365Credentials(): { baseUrl: string; apiKey: string } {
       process.env.SBIZ365_API_BASE_URL ||
       spec?.baseUrl ||
       "https://bigdata.sbiz.or.kr",
-    apiKey: process.env.SBIZ365_API_KEY || spec?.apiKey || "",
+    apiKey: getSbiz365ApiKey("detailAnalysis"),
   };
 }
 
@@ -62,8 +74,11 @@ export function resolveApiPath(id: Sbiz365ApiId): string | null {
 }
 
 export function isSbiz365ApiReady(id: Sbiz365ApiId): boolean {
-  const { apiKey } = getSbiz365Credentials();
-  return Boolean(apiKey && resolveApiPath(id));
+  const apiKey = getSbiz365ApiKey(id);
+  if (!apiKey) return false;
+  // 상세분석·상권지도: 내장 경로 (인증키만 필요)
+  if (id === "detailAnalysis" || id === "marketMap") return true;
+  return Boolean(resolveApiPath(id));
 }
 
 export function listSbiz365Readiness(): Record<Sbiz365ApiId, boolean> {

@@ -1,5 +1,11 @@
 import type { PopulationRow } from "./types";
 import {
+  fetchDetailPopulationViaCapture,
+  type Sbiz365FetchContext,
+  type Sbiz365PopulationResponse,
+} from "./sbiz365DetailPopulation";
+import {
+  getSbiz365ApiKey,
   getSbiz365Credentials,
   isSbiz365ApiReady,
   loadSbiz365Spec,
@@ -7,31 +13,29 @@ import {
   type Sbiz365ApiId,
 } from "./sbiz365Config";
 
-export type Sbiz365PopulationResponse = {
-  residential?: PopulationRow;
-  workplace?: PopulationRow;
-  floating?: PopulationRow;
-};
-
-export type Sbiz365FetchContext = {
-  lat: number;
-  lng: number;
-  radiusMeters: number;
-  address?: string;
-};
+export type { Sbiz365FetchContext, Sbiz365PopulationResponse } from "./sbiz365DetailPopulation";
 
 /** 인증키만 있으면 true (경로는 API별로 따로 확인) */
 export function isSbiz365Configured(): boolean {
   return Boolean(getSbiz365Credentials().apiKey);
 }
 
-/** 상세분석 → 인구 표 */
+/** 상세분석 → 인구 표 (capture + sang_gwon4.sg) */
 export async function fetchDetailAnalysis(
   ctx: Sbiz365FetchContext
 ): Promise<Sbiz365PopulationResponse | null> {
-  const raw = await callSbiz365Api("detailAnalysis", ctx);
-  if (!raw) return null;
-  return normalizePopulationPayload(raw);
+  if (!isSbiz365ApiReady("detailAnalysis")) return null;
+
+  const certKey = getSbiz365ApiKey("detailAnalysis");
+  const customPath = resolveApiPath("detailAnalysis");
+
+  if (customPath) {
+    const raw = await callSbiz365Api("detailAnalysis", ctx);
+    if (!raw) return null;
+    return normalizePopulationPayload(raw);
+  }
+
+  return fetchDetailPopulationViaCapture(ctx, certKey);
 }
 
 /** 간단분석 → 요약·미니카드 (추후 매핑 확장) */
@@ -63,7 +67,8 @@ async function callSbiz365Api(
 ): Promise<Record<string, unknown> | null> {
   if (!isSbiz365ApiReady(id)) return null;
 
-  const { baseUrl, apiKey } = getSbiz365Credentials();
+  const { baseUrl } = getSbiz365Credentials();
+  const apiKey = getSbiz365ApiKey(id);
   const apiPath = resolveApiPath(id)!;
   const spec = loadSbiz365Spec()?.apis?.[id];
 
