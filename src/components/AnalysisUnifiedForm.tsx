@@ -192,7 +192,6 @@ export default function AnalysisUnifiedForm({
               list="analysis-unified-specialty-list"
               value={specialty}
               onChange={(e) => setSpecialty(e.target.value)}
-              placeholder="예: 정형외과"
               required
               disabled={loading}
             />
@@ -207,7 +206,6 @@ export default function AnalysisUnifiedForm({
             <input
               value={clinicName}
               onChange={(e) => setClinicName(e.target.value)}
-              placeholder="예: ○○의원"
               disabled={loading}
             />
           </label>
@@ -216,7 +214,6 @@ export default function AnalysisUnifiedForm({
             <input
               value={mainSearchKeyword}
               onChange={(e) => setMainSearchKeyword(e.target.value)}
-              placeholder="예: 부평역 정형외과"
               disabled={loading}
             />
           </label>
@@ -228,7 +225,6 @@ export default function AnalysisUnifiedForm({
               <input
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="예: 인천광역시 부평구 부평문화로 55"
                 disabled={loading}
               />
               <button
