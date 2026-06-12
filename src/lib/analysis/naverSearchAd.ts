@@ -85,6 +85,23 @@ const BRANCH_AFTER_CLINIC_RE =
   /^(.+?(?:의원|병원|클리닉|센터|의료원|한의원|치과))(.+)$/u;
 const BRANCH_TAIL_RE =
   /^(?:[가-힣]{2,14}(?:역곡역|역점|역|점|동|지점|본점|분점)|부천역곡역|역곡역)$/u;
+const MEDICAL_WORD_RE =
+  /(?:과|의학|병원|의원|외과|내과|정형|비뇨|산부|재활|통증|신경|치과|클리닉|센터)/u;
+
+/** 의원·병원 뒤 지역·지점 꼬리 (부천, 신중동점, 역곡역 …) */
+function isBranchLocationTail(tail: string): boolean {
+  if (!tail || tail.length < 2) return false;
+  if (BRANCH_TAIL_RE.test(tail)) return true;
+  if (/(?:역|점|동|지점|본점|분점)$/.test(tail)) return true;
+  // 시·구 없이 단독 지역명만 붙은 경우 (고려척척…의원부천 → 부천)
+  if (
+    /^[가-힣]{2,6}$/.test(tail) &&
+    !MEDICAL_WORD_RE.test(tail)
+  ) {
+    return true;
+  }
+  return false;
+}
 
 /** 의원·병원 뒤에 붙은 지역·지점명 제거 (연세안…의원 부천역곡역 → 연세안…의원) */
 export function stripBranchAfterMedicalSuffix(placeName: string): string {
@@ -97,7 +114,7 @@ export function stripBranchAfterMedicalSuffix(placeName: string): string {
   const clinic = m[1];
   const tail = m[2];
   if (!tail || tail.length < 2) return bare;
-  if (BRANCH_TAIL_RE.test(tail) || /(?:역|점|동)$/.test(tail)) {
+  if (isBranchLocationTail(tail)) {
     return clinic;
   }
   return bare;
