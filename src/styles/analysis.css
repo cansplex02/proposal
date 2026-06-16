@@ -383,6 +383,17 @@
   .market-grid > .card:last-child .card-label {
     flex-shrink: 0;
   }
+  .market-grid > .card:last-child .analysis-market-map-root,
+  .market-grid > .card:last-child #analysis-market-map-slot {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    display: flex;
+    flex-direction: column;
+    margin: 0 -32px -32px;
+    border-radius: 0 0 20px 20px;
+    overflow: hidden;
+  }
 
   /* 시설 차트 */
   .facility-chart {
@@ -465,29 +476,46 @@
   }
   .map-area--live {
     padding: 0;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    min-height: 360px;
+    border: none;
+    border-radius: 0;
+    min-height: 0;
     max-height: none;
     background: #e8edf5;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    box-shadow: none;
+  }
+  .analysis-market-map-root > .map-area--live,
+  .market-grid > .card:last-child .map-area--live {
+    flex: 1 1 auto;
+    min-height: 280px;
+    height: 100%;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
   }
   .market-map-canvas,
   .market-map-iframe {
     display: block;
+    position: absolute;
+    inset: 0;
     width: 100%;
-    min-height: 288px;
-    height: 288px;
+    height: 100%;
+    min-height: 0;
     border: none;
-    border-radius: 14px 14px 0 0;
+    border-radius: 0;
     background: #e8edf5;
   }
   .market-map-iframe--sbiz365 {
-    min-height: 360px;
-    height: 360px;
     background: #fff;
   }
+  .market-map-iframe--osm {
+    background: #e8edf5;
+  }
+  .map-area--static,
   .map-area--sbiz365 {
+    position: relative;
     border-color: var(--line);
   }
   .map-area-loading--warn {
@@ -502,16 +530,21 @@
     left: 0;
     right: 0;
     bottom: 0;
+    z-index: 2;
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
     gap: 12px;
     padding: 28px 14px 12px;
+    pointer-events: none;
     background: linear-gradient(
       180deg,
       rgba(10, 31, 68, 0) 0%,
       rgba(10, 31, 68, 0.72) 100%
     );
+  }
+  .map-area-footer .map-area-link {
+    pointer-events: auto;
   }
   .map-area-footer-text {
     min-width: 0;
@@ -1490,9 +1523,12 @@
     .population-grid, .market-grid, .search-grid { grid-template-columns: 1fr; }
     .mini-cards, .strategy-cards { grid-template-columns: 1fr; }
     .summary-list { grid-template-columns: 1fr; }
-    .market-grid > .card:last-child .map-area {
-      min-height: 240px;
+    .market-grid > .card:last-child .map-area,
+    .market-grid > .card:last-child .analysis-market-map-root {
+      min-height: 280px;
       max-height: none;
+      margin: 0 -24px -24px;
+      border-radius: 0 0 16px 16px;
     }
     .hero-headline { font-size: 44px; }
     .section-title { font-size: 36px; }

@@ -49,6 +49,48 @@ async function fetchNaverStaticMap(
   });
 }
 
+function osmZoomForRadius(radiusMeters: number): number {
+  if (radiusMeters <= 800) return 15;
+  if (radiusMeters <= 1500) return 14;
+  return 13;
+}
+
+function latLngToTile(lat: number, lng: number, zoom: number) {
+  const n = 2 ** zoom;
+  const x = Math.floor(((lng + 180) / 360) * n);
+  const latRad = (lat * Math.PI) / 180;
+  const y = Math.floor(
+    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n
+  );
+  return { x, y };
+}
+
+const OSM_FETCH_HEADERS = {
+  "User-Agent": "CANSPLEX-proposal/1.0",
+  Accept: "image/png,image/jpeg,*/*",
+};
+
+/** staticmap.de 장애·차단 시 tile.openstreetmap.org 단일 타일 */
+async function fetchOsmTileMap(
+  lat: number,
+  lng: number,
+  radiusMeters: number
+): Promise<Response> {
+  const zoom = osmZoomForRadius(radiusMeters);
+  const { x, y } = latLngToTile(lat, lng, zoom);
+  const url = `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
+  const res = await fetch(url, { headers: OSM_FETCH_HEADERS });
+  if (!res.ok) throw new Error(`OSM tile ${res.status}`);
+
+  const bytes = await res.arrayBuffer();
+  return new Response(bytes, {
+    headers: {
+      "Content-Type": "image/png",
+      "Cache-Control": "public, max-age=86400",
+    },
+  });
+}
+
 async function fetchOsmStaticMap(
   lat: number,
   lng: number,
@@ -56,32 +98,31 @@ async function fetchOsmStaticMap(
   h: number,
   radiusMeters: number
 ): Promise<Response> {
-  const dLat = (radiusMeters / 111320) * 1.35;
-  const dLng =
-    (radiusMeters / (111320 * Math.cos((lat * Math.PI) / 180))) * 1.35;
-  const zoom = radiusMeters <= 800 ? 15 : radiusMeters <= 1500 ? 14 : 13;
+  const zoom = osmZoomForRadius(radiusMeters);
 
-  const url = new URL("https://staticmap.openstreetmap.de/staticmap.php");
-  url.searchParams.set("center", `${lat},${lng}`);
-  url.searchParams.set("zoom", String(zoom));
-  url.searchParams.set("size", `${w}x${h}`);
-  url.searchParams.set("maptype", "mapnik");
-  url.searchParams.set("markers", `${lat},${lng},red-pushpin`);
+  try {
+    const url = new URL("https://staticmap.openstreetmap.de/staticmap.php");
+    url.searchParams.set("center", `${lat},${lng}`);
+    url.searchParams.set("zoom", String(zoom));
+    url.searchParams.set("size", `${w}x${h}`);
+    url.searchParams.set("maptype", "mapnik");
+    url.searchParams.set("markers", `${lat},${lng},red-pushpin`);
 
-  const res = await fetch(url.toString());
-  if (!res.ok) {
-    const bbox = `${lng - dLng},${lat - dLat},${lng + dLng},${lat + dLat}`;
-    const embedFallback = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`;
-    return NextResponse.redirect(embedFallback, 302);
+    const res = await fetch(url.toString(), { headers: OSM_FETCH_HEADERS });
+    if (res.ok) {
+      const bytes = await res.arrayBuffer();
+      return new Response(bytes, {
+        headers: {
+          "Content-Type": res.headers.get("Content-Type") || "image/jpeg",
+          "Cache-Control": "public, max-age=86400",
+        },
+      });
+    }
+  } catch {
+    /* staticmap.de 미응답 → 타일 fallback */
   }
 
-  const bytes = await res.arrayBuffer();
-  return new Response(bytes, {
-    headers: {
-      "Content-Type": res.headers.get("Content-Type") || "image/jpeg",
-      "Cache-Control": "public, max-age=86400",
-    },
-  });
+  return fetchOsmTileMap(lat, lng, radiusMeters);
 }
 
 export async function GET(req: Request) {

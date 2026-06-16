@@ -6,6 +6,9 @@ import AnalysisUnifiedForm from "@/components/AnalysisUnifiedForm";
 import AnalysisSearchResults, {
   type SearchSectionData,
 } from "@/components/AnalysisSearchResults";
+import AnalysisStudioToolbar from "@/components/AnalysisStudioToolbar";
+import SearchSectionEditor from "@/components/SearchSectionEditor";
+import ProposalLinkPanel from "@/components/ProposalLinkPanel";
 import KeywordResults from "@/components/KeywordResults";
 import MarketMapSlot from "@/components/MarketMapSlot";
 import {
@@ -13,7 +16,11 @@ import {
   splitNavHeroAndDemographics,
 } from "@/lib/analysis/splitAnalysisBody";
 import type { TreatmentMode } from "@/lib/analysis/treatmentMode";
-import type { AnalysisReport, SearchGeneratedPayload } from "@/lib/analysis/types";
+import type {
+  AnalysisReport,
+  MarketMapSlotData,
+  SearchGeneratedPayload,
+} from "@/lib/analysis/types";
 
 type Props = {
   beforeSearch: string;
@@ -21,7 +28,20 @@ type Props = {
   searchBody: string;
   keywordsIntro: string;
   htmlAfter: string;
-  initialSearchData?: SearchSectionData;
+  mode?: "studio" | "public";
+  initialSearchData?: SearchSectionData | null;
+  initialMarketMap?: MarketMapSlotData | null;
+  initialKeywords?: AnalysisReport["keywords"] | null;
+  initialKeywordRegions?: string[];
+  initialKeywordFormCtx?: {
+    specialty: string;
+    focusTopics: string;
+    treatmentMode: TreatmentMode;
+  } | null;
+  initialResolvedAddress?: string;
+  initialSlug?: string | null;
+  initialPublishStatus?: "draft" | "published";
+  initialPublishedAt?: string;
   searchDefaults?: {
     specialty?: string;
     clinicName?: string;
@@ -31,32 +51,38 @@ type Props = {
   showInitialSearchResults?: boolean;
 };
 
-type KeywordFormContext = {
-  specialty: string;
-  focusTopics: string;
-  treatmentMode: TreatmentMode;
-};
-
 export default function AnalysisPageView({
   beforeSearch,
   searchIntro,
   searchBody: initialSearchBody,
   keywordsIntro,
   htmlAfter,
-  initialSearchData,
+  mode = "studio",
+  initialSearchData = null,
+  initialMarketMap = null,
+  initialKeywords = null,
+  initialKeywordRegions = [],
+  initialKeywordFormCtx = null,
+  initialResolvedAddress = "",
+  initialSlug = null,
+  initialPublishStatus = "draft",
+  initialPublishedAt,
   searchDefaults,
   showReportAdminSecret = false,
   showInitialSearchResults = false,
 }: Props) {
+  const isPublic = mode === "public";
+  const isStudio = mode === "studio";
+
   const { navHero: initialNavHero, demographicsMarket: initialDemographics } =
     useMemo(() => splitNavHeroAndDemographics(beforeSearch), [beforeSearch]);
 
   const [liveNavHero, setLiveNavHero] = useState(initialNavHero);
   const [liveDemographics, setLiveDemographics] = useState(
-    showInitialSearchResults ? initialDemographics : ""
+    showInitialSearchResults || isPublic ? initialDemographics : ""
   );
   const [searchData, setSearchData] = useState<SearchSectionData | null>(
-    showInitialSearchResults && initialSearchData ? initialSearchData : null
+    showInitialSearchResults || isPublic ? initialSearchData : null
   );
   const [liveSearchBody, setLiveSearchBody] = useState(
     showInitialSearchResults && !initialSearchData ? initialSearchBody : ""
@@ -66,14 +92,25 @@ export default function AnalysisPageView({
   );
   const [keywordData, setKeywordData] = useState<
     AnalysisReport["keywords"] | null
-  >(null);
-  const [keywordRegions, setKeywordRegions] = useState<string[]>([]);
-  const [keywordFormCtx, setKeywordFormCtx] = useState<KeywordFormContext | null>(
-    null
+  >(isPublic || showInitialSearchResults ? initialKeywords : null);
+  const [keywordRegions, setKeywordRegions] = useState<string[]>(
+    initialKeywordRegions
   );
-  const [resolvedAddress, setResolvedAddress] = useState("");
-  const [hasGenerated, setHasGenerated] = useState(showInitialSearchResults);
+  const [keywordFormCtx, setKeywordFormCtx] = useState(
+    initialKeywordFormCtx ?? null
+  );
+  const [resolvedAddress, setResolvedAddress] = useState(initialResolvedAddress);
+  const [hasGenerated, setHasGenerated] = useState(
+    showInitialSearchResults || isPublic
+  );
   const [demographicsFlash, setDemographicsFlash] = useState(false);
+  const [marketMap, setMarketMap] = useState<MarketMapSlotData | null>(
+    initialMarketMap
+  );
+  const [currentSlug, setCurrentSlug] = useState<string | null>(initialSlug);
+  const [publishStatus, setPublishStatus] = useState(initialPublishStatus);
+  const [publishedAt, setPublishedAt] = useState(initialPublishedAt);
+  const [adminSecret, setAdminSecret] = useState("");
 
   const applyDemographicsHtml = useCallback((html: string) => {
     if (!html.trim()) return;
@@ -96,8 +133,15 @@ export default function AnalysisPageView({
           }
         : null);
 
+    if (payload.slug) {
+      setCurrentSlug(payload.slug);
+      setPublishStatus("draft");
+      setPublishedAt(undefined);
+    }
+
     if (payload.beforeSearchHtml?.trim()) {
       applyDemographicsHtml(payload.beforeSearchHtml);
+      setMarketMap(payload.marketMap ?? null);
       if (payload.resolvedAddress) {
         setResolvedAddress(payload.resolvedAddress);
         setLiveNavHero((prev) =>
@@ -132,24 +176,51 @@ export default function AnalysisPageView({
 
     setHasGenerated(true);
 
-    requestAnimationFrame(() => {
-      document
-        .getElementById("analysis-demographics")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }, [applyDemographicsHtml]);
+    if (isStudio) {
+      requestAnimationFrame(() => {
+        document
+          .getElementById("analysis-demographics")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [applyDemographicsHtml, isStudio]);
 
   return (
-    <div className="analysis-page">
+    <div className={`analysis-page ${isPublic ? "analysis-page--public" : ""}`}>
+      {isStudio ? (
+        <AnalysisStudioToolbar
+          slug={currentSlug}
+          publishStatus={publishStatus}
+          publishedAt={publishedAt}
+        />
+      ) : null}
+
       {liveNavHero ? <LegacyHtmlPage html={liveNavHero} /> : null}
 
-      <AnalysisUnifiedForm
-        showAdminSecret={showReportAdminSecret}
-        initialSpecialty={searchDefaults?.specialty}
-        initialClinicName={searchDefaults?.clinicName}
-        initialAddress={searchDefaults?.address}
-        onGenerated={onGenerated}
-      />
+      {isStudio ? (
+        <>
+          {showReportAdminSecret ? (
+            <div className="studio-admin-secret">
+              <label>
+                Admin Secret
+                <input
+                  type="password"
+                  value={adminSecret}
+                  onChange={(e) => setAdminSecret(e.target.value)}
+                  placeholder="발행·수동저장용"
+                />
+              </label>
+            </div>
+          ) : null}
+          <AnalysisUnifiedForm
+            showAdminSecret={showReportAdminSecret}
+            initialSpecialty={searchDefaults?.specialty}
+            initialClinicName={searchDefaults?.clinicName}
+            initialAddress={searchDefaults?.address}
+            onGenerated={onGenerated}
+          />
+        </>
+      ) : null}
 
       {hasGenerated ? (
         <>
@@ -164,7 +235,10 @@ export default function AnalysisPageView({
             {liveDemographics ? (
               <LegacyHtmlPage html={liveDemographics} />
             ) : null}
-            <MarketMapSlot refreshKey={liveDemographics} />
+            <MarketMapSlot
+              refreshKey={liveDemographics}
+              marketMap={marketMap}
+            />
           </div>
 
           <section className="section" id="search">
@@ -179,11 +253,35 @@ export default function AnalysisPageView({
                 <LegacyHtmlPage html={liveSearchBody} />
               ) : (
                 <p className="analysis-search-warn">
-                  검색량·채널 결과를 불러오지 못했습니다. 상태 메시지의
-                  오류·경고를 확인하세요.
+                  검색량·채널 결과를 불러오지 못했습니다.
                 </p>
               )}
             </div>
+            {isStudio && searchData && currentSlug ? (
+              <>
+                <div className="studio-edit-hint studio-edit-hint--inline">
+                  <strong>검색량 및 디지털 채널</strong>만 아래에서 수동 수정할 수
+                  있습니다. 저장이 끝나면 맨 아래{" "}
+                  <strong>「개별링크 만들기」</strong>로 고객 공유 링크를
+                  만드세요.
+                </div>
+                <div className="studio-section-edit-wrap">
+                  <SearchSectionEditor
+                    slug={currentSlug}
+                    data={searchData}
+                    adminSecret={adminSecret}
+                    defaultOpen={hasGenerated}
+                    onSaved={(next) => setSearchData(next)}
+                  />
+                </div>
+              </>
+            ) : null}
+            {isStudio && !searchData && liveSearchBody && currentSlug ? (
+              <p className="studio-edit-hint studio-edit-hint--inline">
+                검색량 데이터가 없습니다. 전체 분석을 다시 생성하거나 slug
+                리포트를 확인하세요.
+              </p>
+            ) : null}
           </section>
 
           <section className="section alt" id="keywords">
@@ -205,6 +303,21 @@ export default function AnalysisPageView({
               )}
             </div>
           </section>
+
+          {isStudio && currentSlug ? (
+            <div id="proposal-link-panel" className="studio-link-publish-bottom">
+              <ProposalLinkPanel
+                slug={currentSlug}
+                publishStatus={publishStatus}
+                publishedAt={publishedAt}
+                adminSecret={adminSecret}
+                onPublished={() => {
+                  setPublishStatus("published");
+                  setPublishedAt(new Date().toISOString());
+                }}
+              />
+            </div>
+          ) : null}
         </>
       ) : null}
 

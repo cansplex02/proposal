@@ -1,11 +1,8 @@
 import { geocodeAddress } from "./geocode";
 import { buildKeywordSection } from "./buildKeywordSection";
 import { resolveRegionsForLocation } from "./resolveRegions";
-import {
-  aggregateFacilities,
-  countMedicalStores,
-  fetchStoresInRadius,
-} from "./sbizStore";
+import { fetchMarketFacilities } from "./sbiz365Facilities";
+import { fetchStoresInRadius, countMedicalStores } from "./sbizStore";
 import {
   fetchDetailAnalysis,
   fetchMarketMap,
@@ -47,15 +44,26 @@ export async function buildAnalysisReport(
     );
   }
 
-  const facilities = aggregateFacilities(stores);
-  const medicalCount = countMedicalStores(stores);
-
   const sbizCtx = {
     lat: geo.lat,
     lng: geo.lng,
     radiusMeters,
     address: geo.roadAddress,
   };
+
+  const {
+    facilities,
+    ok: facilitiesOk,
+    error: facilitiesError,
+    source: facilitySource,
+  } = await fetchMarketFacilities(sbizCtx, stores);
+  if (!facilitiesOk && facilitiesError) {
+    warnings.push(facilitiesError);
+  }
+  const medicalCount =
+    facilitySource === "store"
+      ? countMedicalStores(stores)
+      : (facilities.find((f) => f.label === "의료·복지")?.count ?? 0);
 
   let popData = placeholderPopulation();
   const sbizReady = listSbiz365Readiness();
@@ -145,6 +153,7 @@ export async function buildAnalysisReport(
     },
     market: {
       facilities,
+      facilitySource,
       summaryBullets: [
         `<strong>주거인구:</strong> ${peakAgeInsight(residential, "주거")}`,
         `<strong>직장인구:</strong> ${peakAgeInsight(workplace, "직장")}`,

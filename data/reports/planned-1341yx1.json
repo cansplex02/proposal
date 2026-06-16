@@ -1,0 +1,491 @@
+{
+  "slug": "planned-1341yx1",
+  "clinicName": "",
+  "address": "경기도 부천시 원미구 부흥로 270 삼성미래산부인과",
+  "specialty": "산부인과",
+  "radiusKm": 1.5,
+  "generatedAt": "2026-06-10T05:36:59.627Z",
+  "coordinates": {
+    "lat": 37.4947981,
+    "lng": 126.7725962
+  },
+  "population": {
+    "residential": {
+      "total": 0,
+      "male": 0,
+      "female": 0,
+      "ages": {
+        "under10": 0,
+        "teens": 0,
+        "twentiesThirties": 0,
+        "fortiesFifties": 0,
+        "sixtiesPlus": 0
+      }
+    },
+    "workplace": {
+      "total": 0,
+      "male": 0,
+      "female": 0,
+      "ages": {
+        "under10": 0,
+        "teens": 0,
+        "twentiesThirties": 0,
+        "fortiesFifties": 0,
+        "sixtiesPlus": 0
+      }
+    },
+    "insight": "주거 <strong>중장년·고령</strong> 수요와 직장 <strong>3040 직장</strong> 수요가 공존하는 상권으로, 신뢰·접근성 메시지를 병행 설계합니다."
+  },
+  "market": {
+    "facilities": [
+      {
+        "label": "기타",
+        "count": 4019,
+        "color": "#2b5cd9"
+      },
+      {
+        "label": "음식",
+        "count": 3920,
+        "color": "#5b88f0"
+      },
+      {
+        "label": "소매",
+        "count": 3178,
+        "color": "#8aaef5"
+      },
+      {
+        "label": "교육",
+        "count": 911,
+        "color": "#b8ccf8"
+      },
+      {
+        "label": "의료·복지",
+        "count": 473,
+        "color": "#d4e2fb"
+      },
+      {
+        "label": "생활서비스",
+        "count": 473,
+        "color": "#e8eef8"
+      }
+    ],
+    "summaryBullets": [
+      "<strong>주거인구:</strong> 주거 총 0명 · 60대 이상 0% · 여성 0.0%",
+      "<strong>직장인구:</strong> 직장 총 0명 · 60대 이상 0% · 여성 0.0%",
+      "<strong>반경 1.5km 상가:</strong> 12,974개 업소 · 의료·복지 678개"
+    ],
+    "miniCards": [
+      {
+        "title": "의료·복지 시설 밀집",
+        "sub": "(678개)"
+      },
+      {
+        "title": "상권 업소 밀도",
+        "sub": "총 12,974개"
+      },
+      {
+        "title": "주거+직장 혼합 수요",
+        "sub": "인구·유동 데이터 확인 권장"
+      }
+    ],
+    "mapNote": "경기도 부천시 원미구 부흥로 270 삼성미래산부인과 중심 반경 1.5km"
+  },
+  "keywords": {
+    "subtitle": "경기도·부천시 원미구·중동권 산부인과 공략 키워드",
+    "columns": [
+      {
+        "id": "region",
+        "label": "지역"
+      },
+      {
+        "id": "산부인과",
+        "label": "산부인과"
+      },
+      {
+        "id": "산전검진",
+        "label": "산전검진"
+      },
+      {
+        "id": "임신",
+        "label": "임신"
+      },
+      {
+        "id": "여성검진",
+        "label": "여성검진"
+      },
+      {
+        "id": "자궁근종",
+        "label": "자궁근종"
+      },
+      {
+        "id": "질염",
+        "label": "질염"
+      },
+      {
+        "id": "불임",
+        "label": "불임"
+      },
+      {
+        "id": "피임",
+        "label": "피임"
+      },
+      {
+        "id": "난임",
+        "label": "난임"
+      },
+      {
+        "id": "여의사산부인과",
+        "label": "여의사산부인과"
+      }
+    ],
+    "rows": [
+      {
+        "region": "경기도",
+        "keywords": {
+          "region": "경기도",
+          "산부인과": "경기도산부인과",
+          "산전검진": "경기도산전검진",
+          "임신": "경기도임신",
+          "여성검진": "경기도여성검진",
+          "자궁근종": "경기도자궁근종",
+          "질염": "경기도질염",
+          "불임": "경기도불임",
+          "피임": "경기도피임",
+          "난임": "경기도난임",
+          "여의사산부인과": "경기도여의사산부인과"
+        }
+      },
+      {
+        "region": "부천시 원미구",
+        "keywords": {
+          "region": "부천시 원미구",
+          "산부인과": "부천시원미구산부인과",
+          "산전검진": "부천시원미구산전검진",
+          "임신": "부천시원미구임신",
+          "여성검진": "부천시원미구여성검진",
+          "자궁근종": "부천시원미구자궁근종",
+          "질염": "부천시원미구질염",
+          "불임": "부천시원미구불임",
+          "피임": "부천시원미구피임",
+          "난임": "부천시원미구난임",
+          "여의사산부인과": "부천시원미구여의사산부인과"
+        }
+      },
+      {
+        "region": "중동",
+        "keywords": {
+          "region": "중동",
+          "산부인과": "중동산부인과",
+          "산전검진": "중동산전검진",
+          "임신": "중동임신",
+          "여성검진": "중동여성검진",
+          "자궁근종": "중동자궁근종",
+          "질염": "중동질염",
+          "불임": "중동불임",
+          "피임": "중동피임",
+          "난임": "중동난임",
+          "여의사산부인과": "중동여의사산부인과"
+        }
+      }
+    ],
+    "strategyCards": [
+      {
+        "label": "핵심 1차 키워드",
+        "body": "<strong>경기도·부천시 원미구·중동</strong> + 산부인과"
+      },
+      {
+        "label": "전문성 키워드",
+        "body": "<strong>산전검진 · 임신 · 여성검진</strong>"
+      },
+      {
+        "label": "브랜드 확장",
+        "body": "<strong>산부인과 + 정밀 상담·예약</strong>"
+      }
+    ]
+  },
+  "meta": {
+    "dataSources": [
+      "소상공인시장진흥공단 상가(상권)정보 API",
+      "소상공인365 (미연동)",
+      "카카오 로컬 API",
+      "네이버 지도 검색 (Playwright)",
+      "네이버 검색광고 API (keywordstool)",
+      "네이버 검색 Open API (채널)"
+    ],
+    "warnings": [
+      "SBIZ365_API_KEY 미설정 — 365 데이터는 overrides 또는 수동 입력"
+    ]
+  },
+  "search": {
+    "competitors": [
+      {
+        "name": "삼성미래산부인과",
+        "volume": 4370,
+        "volumePc": 590,
+        "volumeMobile": 3780,
+        "shortKeyword": "삼성미래산부인과",
+        "isOurs": false,
+        "volumeEstimated": false
+      },
+      {
+        "name": "부천정다운여성의원",
+        "volume": 550,
+        "volumePc": 50,
+        "volumeMobile": 500,
+        "shortKeyword": "부천정다운여성의원",
+        "isOurs": false,
+        "volumeEstimated": false
+      },
+      {
+        "name": "애플산부인과의원 부천",
+        "volume": 10,
+        "volumePc": 5,
+        "volumeMobile": 5,
+        "shortKeyword": "애플산부인과의원부천",
+        "isOurs": false,
+        "volumeEstimated": false
+      },
+      {
+        "name": "차차여성의원",
+        "volume": 1770,
+        "volumePc": 150,
+        "volumeMobile": 1620,
+        "shortKeyword": "차차여성의원",
+        "isOurs": false,
+        "volumeEstimated": false
+      },
+      {
+        "name": "유테라산부인과의원",
+        "volume": 6320,
+        "volumePc": 500,
+        "volumeMobile": 5820,
+        "shortKeyword": "유테라산부인과",
+        "isOurs": false,
+        "volumeEstimated": false
+      },
+      {
+        "name": "부천마리아의원",
+        "volume": 3540,
+        "volumePc": 590,
+        "volumeMobile": 2950,
+        "shortKeyword": "부천마리아",
+        "isOurs": false,
+        "volumeEstimated": false
+      },
+      {
+        "name": "부천편안한산부인과의원",
+        "volume": 370,
+        "volumePc": 10,
+        "volumeMobile": 360,
+        "shortKeyword": "부천편안한산부인과",
+        "isOurs": false,
+        "volumeEstimated": false
+      },
+      {
+        "name": "이박산부인과의원",
+        "volume": 190,
+        "volumePc": 10,
+        "volumeMobile": 180,
+        "shortKeyword": "이박산부인과",
+        "isOurs": false,
+        "volumeEstimated": false
+      },
+      {
+        "name": "참편한여성의원",
+        "volume": 280,
+        "volumePc": 30,
+        "volumeMobile": 250,
+        "shortKeyword": "참편한여성의원",
+        "isOurs": false,
+        "volumeEstimated": false
+      },
+      {
+        "name": "수와미여성의원",
+        "volume": 15,
+        "volumePc": 5,
+        "volumeMobile": 10,
+        "shortKeyword": "수와미여성의원",
+        "isOurs": false,
+        "volumeEstimated": false
+      },
+      {
+        "name": "이안산부인과의원",
+        "volume": 2780,
+        "volumePc": 210,
+        "volumeMobile": 2570,
+        "shortKeyword": "이안산부인과",
+        "isOurs": false,
+        "volumeEstimated": false
+      },
+      {
+        "name": "김산부인과의원",
+        "volume": 25,
+        "volumePc": 5,
+        "volumeMobile": 20,
+        "shortKeyword": "김산부인과",
+        "isOurs": false,
+        "volumeEstimated": false
+      }
+    ],
+    "insights": [
+      {
+        "title": "브랜드 검색량 격차",
+        "body": "<strong>삼성미래산부인과, 부천정다운여성의원</strong> 등 지도 상위 노출 병원 대비 개원 전·브랜드 미정 단계에서는 검색 인지도가 형성되지 않은 편으로, <strong>직접 검색 유도</strong>와 브랜드 노출 확대가 필요합니다."
+      },
+      {
+        "title": "모바일 검색·플레이스",
+        "body": "검색의 상당 부분이 <strong>모바일</strong>에서 발생하는 것으로 보이며, <strong>네이버 플레이스·모바일 예약·진료시간</strong> 정보 정비가 필수적입니다."
+      },
+      {
+        "title": "검색 키워드와 포지션",
+        "body": "검색 수요는 <strong>부천 산부인과</strong> 중심입니다. 개원 전에는 <strong>산부인과</strong>·통증·비수술 등 <strong>차별 포지션·롱테일 키워드</strong>를 미리 설계해 두는 것이 유효합니다."
+      }
+    ],
+    "channelMatrix": [
+      {
+        "hospital": "삼성미래산부인과",
+        "isOurs": false,
+        "homepage": "O",
+        "blog": "△",
+        "cafe": "△",
+        "news": "X",
+        "kin": "△",
+        "sns": "X",
+        "video": "X"
+      },
+      {
+        "hospital": "부천정다운여성의원",
+        "isOurs": false,
+        "homepage": "O",
+        "blog": "O",
+        "cafe": "O",
+        "news": "O",
+        "kin": "X",
+        "sns": "X",
+        "video": "X"
+      },
+      {
+        "hospital": "애플산부인과의원 부천",
+        "isOurs": false,
+        "homepage": "O",
+        "blog": "O",
+        "cafe": "X",
+        "news": "O",
+        "kin": "X",
+        "sns": "X",
+        "video": "X"
+      },
+      {
+        "hospital": "차차여성의원",
+        "isOurs": false,
+        "homepage": "O",
+        "blog": "O",
+        "cafe": "△",
+        "news": "O",
+        "kin": "X",
+        "sns": "X",
+        "video": "X"
+      },
+      {
+        "hospital": "유테라산부인과의원",
+        "isOurs": false,
+        "homepage": "O",
+        "blog": "O",
+        "cafe": "△",
+        "news": "O",
+        "kin": "X",
+        "sns": "X",
+        "video": "X"
+      },
+      {
+        "hospital": "부천마리아의원",
+        "isOurs": false,
+        "homepage": "O",
+        "blog": "O",
+        "cafe": "△",
+        "news": "X",
+        "kin": "X",
+        "sns": "X",
+        "video": "X"
+      },
+      {
+        "hospital": "부천편안한산부인과의원",
+        "isOurs": false,
+        "homepage": "X",
+        "blog": "O",
+        "cafe": "X",
+        "news": "X",
+        "kin": "X",
+        "sns": "X",
+        "video": "X"
+      },
+      {
+        "hospital": "이박산부인과의원",
+        "isOurs": false,
+        "homepage": "X",
+        "blog": "X",
+        "cafe": "△",
+        "news": "X",
+        "kin": "X",
+        "sns": "X",
+        "video": "X"
+      },
+      {
+        "hospital": "참편한여성의원",
+        "isOurs": false,
+        "homepage": "O",
+        "blog": "O",
+        "cafe": "X",
+        "news": "X",
+        "kin": "X",
+        "sns": "X",
+        "video": "X"
+      },
+      {
+        "hospital": "수와미여성의원",
+        "isOurs": false,
+        "homepage": "X",
+        "blog": "X",
+        "cafe": "X",
+        "news": "X",
+        "kin": "△",
+        "sns": "X",
+        "video": "X"
+      },
+      {
+        "hospital": "이안산부인과의원",
+        "isOurs": false,
+        "homepage": "O",
+        "blog": "O",
+        "cafe": "△",
+        "news": "X",
+        "kin": "X",
+        "sns": "X",
+        "video": "X"
+      },
+      {
+        "hospital": "김산부인과의원",
+        "isOurs": false,
+        "homepage": "X",
+        "blog": "X",
+        "cafe": "X",
+        "news": "X",
+        "kin": "X",
+        "sns": "X",
+        "video": "X"
+      }
+    ],
+    "meta": {
+      "mapQuery": "부천 산부인과",
+      "rivalCount": 12,
+      "radiusFallback": false,
+      "radiusMetersUsed": 1500,
+      "radiusExpanded": false,
+      "mapPlaceCount": 32,
+      "afterCategoryCount": 26,
+      "afterRadiusCount": 12,
+      "volumeMatchedCount": 12,
+      "searchAdConfigured": true
+    }
+  }
+}

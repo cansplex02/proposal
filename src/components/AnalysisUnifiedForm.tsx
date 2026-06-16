@@ -118,10 +118,16 @@ export default function AnalysisUnifiedForm({
 
       onGenerated({
         slug: data.slug,
+        publicPath: data.publicPath,
+        publishStatus: data.publishStatus,
+        publishedAt: data.publishedAt,
         search: search ?? undefined,
         searchBody: data.searchBody,
         beforeSearchHtml: data.beforeSearchHtml,
+        marketMap: data.marketMap,
         populationSummary: data.populationSummary,
+        population: data.population,
+        market: data.market,
         resolvedAddress: data.resolvedAddress,
         searchKeyword: data.searchKeyword,
         rivalCount: data.rivalCount,

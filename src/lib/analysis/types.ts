@@ -1,5 +1,15 @@
 /** 경쟁분석 리포트 JSON 스키마 (제안서별 1파일) */
 
+export type MarketMapSlotData = {
+  lat: number;
+  lng: number;
+  address: string;
+  radiusKm: number;
+  mapNote?: string;
+  embedUrl?: string;
+  externalUrl?: string;
+};
+
 export type AgeBand = {
   under10: number;
   teens: number;
@@ -94,6 +104,8 @@ export type AnalysisReport = {
   };
   market: {
     facilities: FacilityCount[];
+    /** 주요시설 차트 데이터 출처 */
+    facilitySource?: "sbiz365" | "kakao" | "store" | "none";
     summaryBullets: string[];
     miniCards: { title: string; sub: string }[];
     mapNote?: string;
@@ -137,11 +149,23 @@ export type AnalysisReport = {
     dataSources: string[];
     warnings?: string[];
   };
+  /** 작업실 draft / 공개 publish */
+  publish?: {
+    status: "draft" | "published";
+    publishedAt?: string;
+    /** 제안서 메인 `/p/{slug}` */
+    publicPath?: string;
+    /** 경쟁분석 `/r/{slug}` */
+    analysisPath?: string;
+  };
 };
 
 /** 경쟁분석 생성 API → 클라이언트 섹션 03 */
 export type SearchGeneratedPayload = {
   slug?: string;
+  publicPath?: string;
+  publishStatus?: "draft" | "published";
+  publishedAt?: string;
   search?: NonNullable<AnalysisReport["search"]> | null;
   searchBody?: string;
   searchKeyword?: string | null;
@@ -153,9 +177,14 @@ export type SearchGeneratedPayload = {
   channelMatrix?: NonNullable<AnalysisReport["search"]>["channelMatrix"];
   /** 섹션 01·02 (인구·상권) — 생성 시 갱신 */
   beforeSearchHtml?: string;
+  /** 섹션 02 상권지도 (React 슬롯용) */
+  marketMap?: MarketMapSlotData;
   /** 인구 갱신 요약 (상태 메시지용) */
   populationSummary?: string;
   resolvedAddress?: string;
+  /** 섹션 01·02 원본 (수동 수정용) */
+  population?: AnalysisReport["population"];
+  market?: AnalysisReport["market"];
   /** 섹션 04 키워드 */
   keywords?: AnalysisReport["keywords"];
   keywordRegions?: string[];

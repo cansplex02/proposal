@@ -41,7 +41,7 @@ export function renderAnalysisHtml(
       html,
       "SEARCH",
       `  <div class="section-intro">
-    <div class="section-num">03 · Search Volume</div>
+    <div class="section-num">03 · 검색량</div>
     <h2 class="section-title">검색량 및 <strong>디지털 채널</strong> 현황</h2>
     <p class="section-sub">진료과와 병원명을 입력하면 경쟁병원 브랜드 검색량·온라인 채널을 비교합니다.</p>
   </div>
@@ -84,7 +84,7 @@ function replaceBlock(html: string, name: string, inner: string): string {
 
 function renderPopulationSection(r: AnalysisReport): string {
   const radius = r.radiusKm.toFixed(1);
-  return `  <div class="section-num">01 · Demographics</div>
+  return `  <div class="section-num">01 · 인구 현황</div>
   <h2 class="section-title">주거·직장 <strong>인구 현황</strong> (${radius}km)</h2>
   <p class="section-sub">반경 ${radius}km 내 잠재 환자층의 규모와 특성을 파악합니다.</p>
 
@@ -268,9 +268,7 @@ function renderMarketMap(r: AnalysisReport): string {
       data-map-note="${escapeAttr(r.market.mapNote || "")}"
       data-embed-url="${escapeAttr(embedUrl)}"
       data-external-url="${escapeAttr(externalUrl)}"
-    >
-      <div class="map-area-loading">소상공인365 상권지도 불러오는 중…</div>
-    </div>`;
+    ></div>`;
 }
 
 function renderMarketSection(r: AnalysisReport): string {
@@ -300,13 +298,24 @@ function renderMarketSection(r: AnalysisReport): string {
     )
     .join("\n    ");
 
-  return `  <div class="section-num">02 · Local Market</div>
+  const src = r.market.facilitySource;
+  const isStoreChart = src === "store";
+  const chartLabel = isStoreChart
+    ? `주변 업종 현황 (${r.radiusKm}km)`
+    : `주변 주요시설 현황 (${r.radiusKm}km)`;
+  const chartSub = isStoreChart
+    ? `반경 ${r.radiusKm}km 인프라 및 상권 핵심 지표 (상가 API 집계).`
+    : src === "kakao"
+      ? `반경 ${r.radiusKm}km 주요시설 집계 (지도 POI 기준).`
+      : `반경 ${r.radiusKm}km 주요시설·상권 지표 (소상공인365 상권분석).`;
+
+  return `  <div class="section-num">02 · 상권 정보</div>
   <h2 class="section-title">주변시설 및 <strong>상권 기본 정보</strong></h2>
-  <p class="section-sub">반경 ${r.radiusKm}km 인프라 및 상권 핵심 지표 (상가 API 집계).</p>
+  <p class="section-sub">${chartSub}</p>
 
   <div class="market-grid">
     <div class="card">
-      <div class="card-label">주변 업종 현황 (${r.radiusKm}km)</div>
+      <div class="card-label">${chartLabel}</div>
       <div class="facility-chart">${bars}</div>
       <div class="facility-labels">${labels}</div>
     </div>
@@ -346,7 +355,7 @@ export function renderKeywordSection(r: AnalysisReport): string {
     )
     .join("\n    ");
 
-  return `  <div class="section-num">04 · Keyword Map</div>
+  return `  <div class="section-num">04 · 키워드</div>
   <h2 class="section-title">지역·진료 <strong>공략키워드</strong></h2>
   <p class="section-sub">${escapeHtml(r.keywords.subtitle)}</p>
 
@@ -442,7 +451,7 @@ function renderSearchResultsCore(
 function renderSearchSection(r: AnalysisReport): string {
   const s = r.search!;
   return `  <div class="section-intro">
-    <div class="section-num">03 · Search Volume</div>
+    <div class="section-num">03 · 검색량</div>
     <h2 class="section-title">검색량 및 <strong>디지털 채널</strong> 현황</h2>
     <p class="section-sub">진료과와 병원명을 입력하면 경쟁병원 브랜드 검색량·온라인 채널을 비교합니다.</p>
   </div>
@@ -548,7 +557,15 @@ export function writeAnalysisOutputs(
   const jsonPath = path.join(dataDir, `${report.slug}.json`);
   const htmlPath = path.join(genDir, `${report.slug}-body.html`);
 
-  fs.writeFileSync(jsonPath, JSON.stringify(report, null, 2), "utf8");
+  const withPublish = {
+    ...report,
+    publish: {
+      status: report.publish?.status ?? "draft",
+      publishedAt: report.publish?.publishedAt,
+      publicPath: report.publish?.publicPath ?? `/p/${report.slug}`,
+    },
+  };
+  fs.writeFileSync(jsonPath, JSON.stringify(withPublish, null, 2), "utf8");
   fs.writeFileSync(htmlPath, html, "utf8");
 
   return { jsonPath, htmlPath };

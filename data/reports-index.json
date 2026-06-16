@@ -1,0 +1,62 @@
+[
+  {
+    "slug": "planned-w7c8k9",
+    "clinicName": "planned-w7c8k9",
+    "address": "경기도 부천시 원미구 상동로 90 메가플러스",
+    "specialty": "정형외과",
+    "label": "planned-w7c8k9",
+    "publicPath": "/p/planned-w7c8k9",
+    "analysisPath": "/r/planned-w7c8k9",
+    "status": "published",
+    "publishedAt": "2026-06-16T06:01:41.609Z",
+    "updatedAt": "2026-06-16T06:01:41.609Z"
+  },
+  {
+    "slug": "planned-k3sywo",
+    "clinicName": "planned-k3sywo",
+    "address": "인천광역시 부평구 부평대로 20",
+    "specialty": "정형외과",
+    "label": "planned-k3sywo",
+    "publicPath": "/p/planned-k3sywo",
+    "analysisPath": "/r/planned-k3sywo",
+    "status": "published",
+    "publishedAt": "2026-06-12T07:06:41.612Z",
+    "updatedAt": "2026-06-12T07:06:41.612Z"
+  },
+  {
+    "slug": "planned-1ockzf4",
+    "clinicName": "planned-1ockzf4",
+    "address": "인천광역시 부평구 부평대로 20",
+    "specialty": "정형외과",
+    "label": "planned-1ockzf4",
+    "publicPath": "/p/planned-1ockzf4",
+    "analysisPath": "/r/planned-1ockzf4",
+    "status": "published",
+    "publishedAt": "2026-06-12T06:47:30.860Z",
+    "updatedAt": "2026-06-12T06:47:30.860Z"
+  },
+  {
+    "slug": "clinic-18ujonm",
+    "clinicName": "부평그린마취통증의학과의원",
+    "address": "인천광역시 부평구 부평동",
+    "specialty": "마취통증의학과",
+    "label": "부평그린마취통증의학과의원",
+    "publicPath": "/p/clinic-18ujonm",
+    "analysisPath": "/r/clinic-18ujonm",
+    "status": "published",
+    "publishedAt": "2026-06-12T06:45:01.581Z",
+    "updatedAt": "2026-06-12T06:45:01.581Z"
+  },
+  {
+    "slug": "planned-9wvqsc",
+    "clinicName": "planned-9wvqsc",
+    "address": "경기도 부천시 원미구 상동로 90 메가플러스",
+    "specialty": "정형외과",
+    "label": "planned-9wvqsc",
+    "publicPath": "/p/planned-9wvqsc",
+    "analysisPath": "/r/planned-9wvqsc",
+    "status": "published",
+    "publishedAt": "2026-06-12T05:58:05.023Z",
+    "updatedAt": "2026-06-12T05:58:05.023Z"
+  }
+]

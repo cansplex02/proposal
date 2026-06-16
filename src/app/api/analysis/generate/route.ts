@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { NextResponse } from "next/server";
 import { buildAnalysisReport } from "@/lib/analysis/buildReport";
+import { buildMarketMapSlotData } from "@/lib/analysis/sbiz365MarketMap";
 import { resolveAddressFromClinicName } from "@/lib/analysis/naverLocalSearch";
 import {
   renderAnalysisHtml,
@@ -13,6 +14,7 @@ import {
   suggestSlugFromAddressSpecialty,
   suggestSlugFromClinicName,
 } from "@/lib/analysis/suggestSlug";
+import { publicProposalPath } from "@/lib/publish/paths";
 import type { AnalysisInput } from "@/lib/analysis/types";
 
 export const runtime = "nodejs";
@@ -89,6 +91,7 @@ export async function POST(req: Request) {
 
     let paths: { jsonPath: string; htmlPath: string } | undefined;
     let saveError: string | undefined;
+    const publicPath = publicProposalPath(report.slug);
     try {
       if (!process.env.VERCEL) {
         paths = writeAnalysisOutputs(report, html);
@@ -99,6 +102,7 @@ export async function POST(req: Request) {
           JSON.stringify(input, null, 2),
           "utf8"
         );
+        /* 발행은 작업실에서 수동 수정 후 「공개 발행」으로 처리 */
       }
     } catch (e) {
       saveError =
@@ -118,14 +122,19 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       slug: report.slug,
+      publicPath,
+      publishStatus: "draft" as const,
       search: report.search ?? null,
       competitors: report.search?.competitors ?? [],
       insights: report.search?.insights ?? [],
       channelMatrix: report.search?.channelMatrix ?? [],
       searchBody,
       beforeSearchHtml,
+      marketMap: buildMarketMapSlotData(report),
       populationSummary,
       resolvedAddress: report.address,
+      population: report.population,
+      market: report.market,
       keywords: report.keywords,
       keywordRegions: report.keywords.rows.map((r) => r.region),
       rivalCount,

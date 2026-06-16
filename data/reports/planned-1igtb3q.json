@@ -1,0 +1,287 @@
+{
+  "slug": "planned-1igtb3q",
+  "clinicName": "",
+  "address": "서울특별시 강남구 강남대로 302-2",
+  "specialty": "항문외과",
+  "radiusKm": 1.5,
+  "generatedAt": "2026-06-10T06:54:10.368Z",
+  "coordinates": {
+    "lat": 37.4970495,
+    "lng": 127.0281941
+  },
+  "population": {
+    "residential": {
+      "total": 165680,
+      "male": 79405,
+      "female": 86275,
+      "ages": {
+        "under10": 9380,
+        "teens": 17206,
+        "twentiesThirties": 49770,
+        "fortiesFifties": 56911,
+        "sixtiesPlus": 32413
+      }
+    },
+    "workplace": {
+      "total": 567336,
+      "male": 285113,
+      "female": 282223,
+      "ages": {
+        "under10": 0,
+        "teens": 0,
+        "twentiesThirties": 249252,
+        "fortiesFifties": 229506,
+        "sixtiesPlus": 88578
+      }
+    },
+    "insight": "주거 <strong>2030</strong> 수요와 직장 <strong>3040 직장</strong> 수요가 공존하는 상권으로, 검색·예약 편의 메시지를 병행 설계합니다."
+  },
+  "market": {
+    "facilities": [
+      {
+        "label": "기타",
+        "count": 11250,
+        "color": "#2b5cd9"
+      },
+      {
+        "label": "음식",
+        "count": 2969,
+        "color": "#5b88f0"
+      },
+      {
+        "label": "소매",
+        "count": 2229,
+        "color": "#8aaef5"
+      },
+      {
+        "label": "교육",
+        "count": 1451,
+        "color": "#b8ccf8"
+      },
+      {
+        "label": "생활서비스",
+        "count": 1381,
+        "color": "#d4e2fb"
+      },
+      {
+        "label": "의료·복지",
+        "count": 720,
+        "color": "#e8eef8"
+      }
+    ],
+    "summaryBullets": [
+      "<strong>주거인구:</strong> 주거 총 165,680명 · 40~50대 34.3% · 여성 52.1%",
+      "<strong>직장인구:</strong> 직장 총 567,336명 · 20~30대 43.9% · 여성 49.7%",
+      "<strong>반경 1.5km 상가:</strong> 20,000개 업소 · 의료·복지 944개"
+    ],
+    "miniCards": [
+      {
+        "title": "의료·복지 시설 밀집",
+        "sub": "(944개)"
+      },
+      {
+        "title": "상권 업소 밀도",
+        "sub": "총 20,000개"
+      },
+      {
+        "title": "주거+직장 혼합 수요",
+        "sub": "인구·유동 데이터 확인 권장"
+      }
+    ],
+    "mapNote": "서울특별시 강남구 강남대로 302-2 중심 반경 1.5km"
+  },
+  "keywords": {
+    "subtitle": "서울·강남구·역삼동권 항문외과 공략 키워드",
+    "columns": [
+      {
+        "id": "region",
+        "label": "지역"
+      },
+      {
+        "id": "항문외과",
+        "label": "항문외과"
+      },
+      {
+        "id": "치질",
+        "label": "치질"
+      },
+      {
+        "id": "치핵",
+        "label": "치핵"
+      },
+      {
+        "id": "지방종",
+        "label": "지방종"
+      },
+      {
+        "id": "피지낭종",
+        "label": "피지낭종"
+      },
+      {
+        "id": "항문질환",
+        "label": "항문질환"
+      },
+      {
+        "id": "항문통증",
+        "label": "항문통증"
+      }
+    ],
+    "rows": [
+      {
+        "region": "서울",
+        "keywords": {
+          "region": "서울",
+          "항문외과": "서울항문외과",
+          "치질": "서울치질",
+          "치핵": "서울치핵",
+          "지방종": "서울지방종",
+          "피지낭종": "서울피지낭종",
+          "항문질환": "서울항문질환",
+          "항문통증": "서울항문통증"
+        }
+      },
+      {
+        "region": "강남구",
+        "keywords": {
+          "region": "강남구",
+          "항문외과": "강남구항문외과",
+          "치질": "강남구치질",
+          "치핵": "강남구치핵",
+          "지방종": "강남구지방종",
+          "피지낭종": "강남구피지낭종",
+          "항문질환": "강남구항문질환",
+          "항문통증": "강남구항문통증"
+        }
+      },
+      {
+        "region": "역삼동",
+        "keywords": {
+          "region": "역삼동",
+          "항문외과": "역삼동항문외과",
+          "치질": "역삼동치질",
+          "치핵": "역삼동치핵",
+          "지방종": "역삼동지방종",
+          "피지낭종": "역삼동피지낭종",
+          "항문질환": "역삼동항문질환",
+          "항문통증": "역삼동항문통증"
+        }
+      }
+    ],
+    "strategyCards": [
+      {
+        "label": "핵심 1차 키워드",
+        "body": "<strong>서울·강남구·역삼동</strong> + 항문외과"
+      },
+      {
+        "label": "전문성 키워드",
+        "body": "<strong>치질 · 치핵 · 지방종</strong>"
+      },
+      {
+        "label": "브랜드 확장",
+        "body": "<strong>항문외과 + 정밀 상담·예약</strong>"
+      }
+    ]
+  },
+  "meta": {
+    "dataSources": [
+      "소상공인시장진흥공단 상가(상권)정보 API",
+      "소상공인365 오픈 API",
+      "카카오 로컬 API",
+      "네이버 지도 검색 (Playwright)",
+      "네이버 검색광고 API (keywordstool)",
+      "네이버 검색 Open API (채널)"
+    ]
+  },
+  "search": {
+    "competitors": [
+      {
+        "name": "강남항외과의원",
+        "volume": 540,
+        "volumePc": 110,
+        "volumeMobile": 430,
+        "shortKeyword": "강남항외과",
+        "isOurs": false,
+        "volumeEstimated": false
+      },
+      {
+        "name": "강남송도외과의원",
+        "volume": 320,
+        "volumePc": 40,
+        "volumeMobile": 280,
+        "shortKeyword": "강남송도외과",
+        "isOurs": false,
+        "volumeEstimated": false
+      },
+      {
+        "name": "좋은아침외과의원",
+        "volume": 220,
+        "volumePc": 110,
+        "volumeMobile": 110,
+        "shortKeyword": "좋은아침외과",
+        "isOurs": false,
+        "volumeEstimated": false
+      }
+    ],
+    "insights": [
+      {
+        "title": "브랜드 검색량 격차",
+        "body": "<strong>강남항외과의원, 강남송도외과의원</strong> 등 지도 상위 노출 병원 대비 개원 전·브랜드 미정 단계에서는 검색 인지도가 형성되지 않은 편으로, <strong>직접 검색 유도</strong>와 브랜드 노출 확대가 필요합니다."
+      },
+      {
+        "title": "모바일 검색·플레이스",
+        "body": "검색의 상당 부분이 <strong>모바일</strong>에서 발생하는 것으로 보이며, <strong>네이버 플레이스·모바일 예약·진료시간</strong> 정보 정비가 필수적입니다."
+      },
+      {
+        "title": "검색 키워드와 포지션",
+        "body": "검색 수요는 <strong>강남역 항문외과</strong> 중심입니다. 개원 전에는 <strong>항문외과</strong>·통증·비수술 등 <strong>차별 포지션·롱테일 키워드</strong>를 미리 설계해 두는 것이 유효합니다."
+      }
+    ],
+    "channelMatrix": [
+      {
+        "hospital": "강남항외과의원",
+        "isOurs": false,
+        "homepage": "O",
+        "blog": "O",
+        "cafe": "O",
+        "news": "X",
+        "kin": "X",
+        "sns": "X",
+        "video": "X"
+      },
+      {
+        "hospital": "강남송도외과의원",
+        "isOurs": false,
+        "homepage": "O",
+        "blog": "O",
+        "cafe": "O",
+        "news": "X",
+        "kin": "X",
+        "sns": "X",
+        "video": "X"
+      },
+      {
+        "hospital": "좋은아침외과의원",
+        "isOurs": false,
+        "homepage": "O",
+        "blog": "O",
+        "cafe": "X",
+        "news": "O",
+        "kin": "X",
+        "sns": "X",
+        "video": "X"
+      }
+    ],
+    "meta": {
+      "mapQuery": "강남역 항문외과",
+      "rivalCount": 3,
+      "radiusFallback": false,
+      "radiusMetersUsed": 2500,
+      "radiusExpanded": true,
+      "mapPlaceCount": 3,
+      "afterCategoryCount": 3,
+      "afterRadiusCount": 3,
+      "volumeMatchedCount": 3,
+      "searchAdConfigured": true
+    }
+  }
+}

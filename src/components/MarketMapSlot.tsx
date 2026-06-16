@@ -1,25 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useLayoutEffect, useRef } from "react";
+import { createRoot, type Root } from "react-dom/client";
 import MarketRadiusMap from "@/components/MarketRadiusMap";
-
-type SlotData = {
-  lat: number;
-  lng: number;
-  address: string;
-  radiusKm: number;
-  mapNote?: string;
-  embedUrl?: string;
-  externalUrl?: string;
-};
+import type { MarketMapSlotData } from "@/lib/analysis/types";
 
 type Props = {
   /** demographics HTML 갱신 시 재탐색 */
   refreshKey: string;
+  /** API에서 직접 전달 (DOM data-* 파싱보다 우선) */
+  marketMap?: MarketMapSlotData | null;
 };
 
-function readSlot(el: HTMLElement): SlotData | null {
+function readSlot(el: HTMLElement): MarketMapSlotData | null {
   const lat = Number(el.dataset.lat);
   const lng = Number(el.dataset.lng);
   const radiusKm = Number(el.dataset.radiusKm || "1.5");
@@ -33,55 +26,85 @@ function readSlot(el: HTMLElement): SlotData | null {
   return { lat, lng, address, radiusKm, mapNote, embedUrl, externalUrl };
 }
 
-export default function MarketMapSlot({ refreshKey }: Props) {
-  const [mount, setMount] = useState<{
-    el: HTMLElement;
-    data: SlotData;
-  } | null>(null);
+function renderIntoSlot(slot: HTMLElement, data: MarketMapSlotData) {
+  return (
+    <MarketRadiusMap
+      lat={data.lat}
+      lng={data.lng}
+      address={data.address}
+      radiusKm={data.radiusKm}
+      mapNote={data.mapNote}
+      embedUrl={data.embedUrl}
+      externalUrl={data.externalUrl}
+    />
+  );
+}
 
-  useEffect(() => {
+export default function MarketMapSlot({ refreshKey, marketMap }: Props) {
+  const rootRef = useRef<Root | null>(null);
+  const slotRef = useRef<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
     let cancelled = false;
+    let attempts = 0;
+    let timer: number | null = null;
 
-    const attach = () => {
-      if (cancelled) return;
-      const slot = document.getElementById("analysis-market-map-slot");
-      if (!slot) {
-        setMount(null);
-        return;
-      }
-
-      const data = readSlot(slot);
-      if (!data) {
-        setMount(null);
-        return;
-      }
-
-      slot.innerHTML = "";
-      setMount({ el: slot, data });
+    const unmount = () => {
+      rootRef.current?.unmount();
+      rootRef.current = null;
+      slotRef.current = null;
     };
 
-    const raf = requestAnimationFrame(attach);
-    const timer = window.setTimeout(attach, 60);
+    const mount = (): boolean => {
+      if (cancelled) return true;
+
+      const slot = document.getElementById("analysis-market-map-slot");
+      const data = marketMap ?? (slot ? readSlot(slot) : null);
+      if (!slot || !data) return false;
+
+      if (rootRef.current && slotRef.current === slot) {
+        slot.className = "analysis-market-map-root";
+        rootRef.current.render(renderIntoSlot(slot, data));
+        return true;
+      }
+
+      unmount();
+      slot.innerHTML = "";
+      slot.className = "analysis-market-map-root";
+      slot.id = "analysis-market-map-slot";
+      const root = createRoot(slot);
+      rootRef.current = root;
+      slotRef.current = slot;
+      root.render(renderIntoSlot(slot, data));
+      return true;
+    };
+
+    if (!mount()) {
+      timer = window.setInterval(() => {
+        attempts += 1;
+        if (mount() || attempts >= 40) {
+          if (timer !== null) window.clearInterval(timer);
+        }
+      }, 100);
+    }
+
+    const container = document.getElementById("analysis-demographics");
+    const observer =
+      container &&
+      new MutationObserver(() => {
+        if (!cancelled) mount();
+      });
+    if (observer && container) {
+      observer.observe(container, { childList: true, subtree: true });
+    }
 
     return () => {
       cancelled = true;
-      cancelAnimationFrame(raf);
-      window.clearTimeout(timer);
+      if (timer !== null) window.clearInterval(timer);
+      observer?.disconnect();
+      unmount();
     };
-  }, [refreshKey]);
+  }, [refreshKey, marketMap]);
 
-  if (!mount) return null;
-
-  return createPortal(
-    <MarketRadiusMap
-      lat={mount.data.lat}
-      lng={mount.data.lng}
-      address={mount.data.address}
-      radiusKm={mount.data.radiusKm}
-      mapNote={mount.data.mapNote}
-      embedUrl={mount.data.embedUrl}
-      externalUrl={mount.data.externalUrl}
-    />,
-    mount.el
-  );
+  return null;
 }
