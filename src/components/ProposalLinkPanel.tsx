@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { AnalysisReport } from "@/lib/analysis/types";
 
 type Props = {
   slug: string;
   publishStatus?: "draft" | "published";
   publishedAt?: string;
   adminSecret?: string;
+  draftReport?: AnalysisReport | null;
   onPublished?: () => void;
 };
 
@@ -15,6 +17,7 @@ export default function ProposalLinkPanel({
   publishStatus = "draft",
   publishedAt,
   adminSecret,
+  draftReport = null,
   onPublished,
 }: Props) {
   const [loading, setLoading] = useState(false);
@@ -29,16 +32,50 @@ export default function ProposalLinkPanel({
     setShareUrl(`${window.location.origin}/p/${slug}`);
   }, [slug]);
 
+  async function persistDraft(): Promise<boolean> {
+    if (!draftReport) {
+      setStatus("분석 데이터가 없습니다. 주소·진료과 입력 후 다시 생성해 주세요.");
+      return false;
+    }
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (adminSecret) headers.Authorization = `Bearer ${adminSecret}`;
+    try {
+      const res = await fetch(`/api/analysis/report/${slug}`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ report: draftReport }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          (data as { error?: string }).error || "draft 저장 실패"
+        );
+      }
+      return true;
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : "draft 저장 오류");
+      return false;
+    }
+  }
+
   async function createLink() {
     setLoading(true);
     setStatus(null);
     try {
+      if (!(await persistDraft())) return;
+
       const headers: Record<string, string> = {};
       if (adminSecret) headers.Authorization = `Bearer ${adminSecret}`;
+      if (draftReport) headers["Content-Type"] = "application/json";
 
       const res = await fetch(`/api/analysis/publish/${slug}`, {
         method: "POST",
         headers,
+        body: draftReport
+          ? JSON.stringify({ report: draftReport })
+          : undefined,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "링크 생성 실패");
@@ -46,6 +83,17 @@ export default function ProposalLinkPanel({
       onPublished?.();
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "링크 생성 오류");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function openPreview(path: string) {
+    setStatus(null);
+    setLoading(true);
+    try {
+      if (!(await persistDraft())) return;
+      window.open(path, "_blank", "noopener,noreferrer");
     } finally {
       setLoading(false);
     }
@@ -77,22 +125,22 @@ export default function ProposalLinkPanel({
           </p>
         </div>
         <div className="studio-link-panel__actions">
-          <a
+          <button
+            type="button"
             className="studio-link-panel__btn studio-link-panel__btn--outline"
-            href={proposalPath}
-            target="_blank"
-            rel="noopener noreferrer"
+            disabled={loading}
+            onClick={() => openPreview(proposalPath)}
           >
             제안서 미리보기
-          </a>
-          <a
+          </button>
+          <button
+            type="button"
             className="studio-link-panel__btn studio-link-panel__btn--outline"
-            href={analysisPath}
-            target="_blank"
-            rel="noopener noreferrer"
+            disabled={loading}
+            onClick={() => openPreview(analysisPath)}
           >
             분석 결과 미리보기
-          </a>
+          </button>
         </div>
       </div>
 

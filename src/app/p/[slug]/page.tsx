@@ -15,7 +15,8 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const report = loadPublishedReport(slug) ?? loadDraftReport(slug);
+  const report =
+    (await loadPublishedReport(slug)) ?? (await loadDraftReport(slug));
   return {
     title: report
       ? `CANSPLEX · ${report.clinicName || slug} 제안서`
@@ -26,7 +27,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ClientProposalPage({ params }: Props) {
   const { slug } = await params;
-  const report = loadPublishedReport(slug) ?? loadDraftReport(slug);
+  const report =
+    (await loadPublishedReport(slug)) ?? (await loadDraftReport(slug));
   if (!report) notFound();
 
   const baseHtml = loadHtmlFile("proposal-body.html");

@@ -1,5 +1,6 @@
 import proj4 from "proj4";
 import type { PopulationRow } from "./types";
+import { sbizFetch } from "./sbizFetch";
 
 export type Sbiz365FetchContext = {
   lat: number;
@@ -17,6 +18,11 @@ export type Sbiz365PopulationResponse = {
 const BASE = "https://bigdata.sbiz.or.kr";
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+/** Vercel 등 서버리스 환경에서는 Chromium 실행 불가 */
+function allowPlaywrightFallback(): boolean {
+  return !process.env.VERCEL;
+}
 
 function sbizHeaders(cookie: string, extra: Record<string, string> = {}) {
   return {
@@ -133,21 +139,24 @@ function parseGenderAgeSection(
 
 type CaptureResult = { analyNo: number; analyDate: string };
 
-async function bootstrapSession(certKey: string): Promise<string> {
+async function bootstrapSession(
+  certKey: string,
+  ctx: Sbiz365FetchContext
+): Promise<string> {
   let cookie = `XTLOGINID=${certKey}`;
   const warmUrl =
     `${BASE}/gis/openApi/detail?certKey=${encodeURIComponent(certKey)}` +
-    `&type=detail&rptpType=bizonAnls`;
-  const res = await fetch(warmUrl, {
+    `&lat=${ctx.lat}&lng=${ctx.lng}&type=detail&rptpType=bizonAnls`;
+  const res = await sbizFetch(warmUrl, {
     headers: sbizHeaders(cookie, { Accept: "text/html" }),
     redirect: "follow",
-  });
+  }, "상세분석 세션");
   cookie = mergeCookies(cookie, res);
   await res.text().catch(() => "");
 
-  const warmApi = await fetch(`${BASE}/gis/api/getTpbizLcd`, {
+  const warmApi = await sbizFetch(`${BASE}/gis/api/getTpbizLcd`, {
     headers: sbizHeaders(cookie, { Accept: "application/json" }),
-  });
+  }, "상세분석 업종");
   cookie = mergeCookies(cookie, warmApi);
   await warmApi.text().catch(() => "");
 
@@ -161,7 +170,7 @@ async function postCapture(
   upjongCd: string
 ): Promise<{ cap: CaptureResult; cookie: string }> {
   const tm = wgs84ToTm(ctx.lng, ctx.lat);
-  const res = await fetch(`${BASE}/gis/com/report/capture.json`, {
+  const res = await sbizFetch(`${BASE}/gis/com/report/capture.json`, {
     method: "POST",
     headers: sbizHeaders(cookie, {
       "Content-Type": "application/json;charset=utf-8",
@@ -182,7 +191,7 @@ async function postCapture(
       apiLogin: "N",
       sprNo: 0,
     }),
-  });
+  }, "상세분석 capture");
   const text = await res.text();
   if (!res.ok) {
     throw new Error(`[상세분석] capture 실패 (${res.status}): ${text.slice(0, 200)}`);
@@ -222,18 +231,18 @@ async function fetchSangGwon4(
   let lastErr = "";
 
   for (const sg of ["sang_gwon1.sg", "sang_gwon2.sg", "sang_gwon3.sg"]) {
-    await fetch(`${BASE}/gis/bizonAnls/report/sg/${sg}?${qs}`, {
+    await sbizFetch(`${BASE}/gis/bizonAnls/report/sg/${sg}?${qs}`, {
       headers: sbizHeaders(cookie, { Accept: "text/html" }),
-    }).catch(() => null);
+    }, "상세분석 준비").catch(() => null);
   }
 
   for (let attempt = 0; attempt < 4; attempt++) {
     if (attempt > 0) {
       await new Promise((r) => setTimeout(r, 400 * attempt));
     }
-    const res = await fetch(url, {
+    const res = await sbizFetch(url, {
       headers: sbizHeaders(cookie, { Accept: "text/html" }),
-    });
+    }, "상세분석 인구");
     const text = await res.text();
     if (
       res.ok &&
@@ -253,19 +262,23 @@ export async function fetchDetailPopulationViaCapture(
   ctx: Sbiz365FetchContext,
   certKey: string
 ): Promise<Sbiz365PopulationResponse> {
-  if (process.env.SBIZ365_USE_PLAYWRIGHT === "1") {
+  if (process.env.SBIZ365_USE_PLAYWRIGHT === "1" && allowPlaywrightFallback()) {
     return fetchDetailPopulationWithPlaywright(ctx, certKey);
   }
   try {
     return await fetchDetailPopulationWithFetch(ctx, certKey);
   } catch (fetchErr) {
-    try {
-      return await fetchDetailPopulationWithPlaywright(ctx, certKey);
-    } catch (pwErr) {
-      const a = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
-      const b = pwErr instanceof Error ? pwErr.message : String(pwErr);
-      throw new Error(`[상세분석] 인구 조회 실패 — ${a} / ${b}`);
+    if (allowPlaywrightFallback()) {
+      try {
+        return await fetchDetailPopulationWithPlaywright(ctx, certKey);
+      } catch (pwErr) {
+        const a = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+        const b = pwErr instanceof Error ? pwErr.message : String(pwErr);
+        throw new Error(`[상세분석] 인구 조회 실패 — ${a} / ${b}`);
+      }
     }
+    const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+    throw new Error(`[상세분석] 인구 조회 실패 — ${msg}`);
   }
 }
 
@@ -274,7 +287,7 @@ async function fetchDetailPopulationWithFetch(
   certKey: string
 ): Promise<Sbiz365PopulationResponse> {
   const upjongCd = process.env.SBIZ365_UPJONG_CD?.trim() || "Q1";
-  let cookie = await bootstrapSession(certKey);
+  let cookie = await bootstrapSession(certKey, ctx);
   const { cap, cookie: cookieAfterCap } = await postCapture(
     ctx,
     certKey,

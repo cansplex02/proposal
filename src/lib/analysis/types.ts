@@ -29,6 +29,8 @@ export type FacilityCount = {
   label: string;
   count: number;
   color?: string;
+  /** 직전 반기 대비 증감률(%) — 업소현황(storeStatus) 차트용 */
+  deltaPercent?: number;
 };
 
 export type KeywordColumn = {
@@ -105,9 +107,22 @@ export type AnalysisReport = {
   market: {
     facilities: FacilityCount[];
     /** 주요시설 차트 데이터 출처 */
-    facilitySource?: "sbiz365" | "kakao" | "store" | "none";
+    facilitySource?: "sbiz365" | "kakao" | "store" | "storeStatus" | "none";
+    /** 차트 제목·설명 커스텀 (업소현황 등) */
+    facilityCaption?: { title: string; sub: string };
     summaryBullets: string[];
-    miniCards: { title: string; sub: string }[];
+    miniCards: {
+      title: string;
+      sub: string;
+      /** 강조용 큰 수치 (예: "1,250개") */
+      value?: string;
+      /** 카드 액센트 색상 */
+      accent?: "blue" | "green" | "violet";
+      /** 아이콘 종류 */
+      icon?: "medical" | "store" | "people";
+      /** 증감 배지 */
+      trend?: { text: string; dir: "up" | "down" | "flat" };
+    }[];
     mapNote?: string;
   };
   search?: {
@@ -167,6 +182,9 @@ export type SearchGeneratedPayload = {
   publishStatus?: "draft" | "published";
   publishedAt?: string;
   search?: NonNullable<AnalysisReport["search"]> | null;
+  /** 전체 리포트 JSON — draft 백업 저장·발행 복구용 */
+  report?: AnalysisReport;
+  draftSaved?: boolean;
   searchBody?: string;
   searchKeyword?: string | null;
   rivalCount?: number;

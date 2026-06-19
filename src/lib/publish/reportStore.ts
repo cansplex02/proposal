@@ -7,6 +7,13 @@ import {
   publicProposalPath,
 } from "@/lib/publish/paths";
 import type { ReportIndexEntry } from "@/lib/publish/types";
+import {
+  blobLoadDraft,
+  blobLoadPublished,
+  blobSaveDraft,
+  blobSavePublished,
+  isReportBlobEnabled,
+} from "@/lib/publish/reportBlob";
 
 function ensureDir(dir: string) {
   fs.mkdirSync(dir, { recursive: true });
@@ -22,27 +29,12 @@ function writeJson(filePath: string, data: unknown) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
 }
 
-export function draftReportPath(slug: string): string {
-  return path.join(publishPaths.reportsDraft, `${slug}.json`);
+function shouldUseBlobStorage(): boolean {
+  return Boolean(process.env.VERCEL && isReportBlobEnabled());
 }
 
-export function publishedReportPath(slug: string): string {
-  return path.join(publishPaths.reportsPublished, `${slug}.json`);
-}
-
-export function loadDraftReport(slug: string): AnalysisReport | null {
-  return readJson<AnalysisReport>(draftReportPath(slug));
-}
-
-export function loadPublishedReport(slug: string): AnalysisReport | null {
-  return readJson<AnalysisReport>(publishedReportPath(slug));
-}
-
-export function saveDraftReport(report: AnalysisReport): void {
-  if (process.env.VERCEL) {
-    throw new Error("Vercel에서는 로컬 파일 저장이 불가합니다.");
-  }
-  const next: AnalysisReport = {
+function withPublishPaths(report: AnalysisReport): AnalysisReport {
+  return {
     ...report,
     publish: {
       status: report.publish?.status ?? "draft",
@@ -51,7 +43,48 @@ export function saveDraftReport(report: AnalysisReport): void {
       analysisPath: publicAnalysisPath(report.slug),
     },
   };
-  writeJson(draftReportPath(report.slug), next);
+}
+
+export function draftReportPath(slug: string): string {
+  return path.join(publishPaths.reportsDraft, `${slug}.json`);
+}
+
+export function publishedReportPath(slug: string): string {
+  return path.join(publishPaths.reportsPublished, `${slug}.json`);
+}
+
+export async function loadDraftReport(
+  slug: string
+): Promise<AnalysisReport | null> {
+  if (shouldUseBlobStorage()) {
+    const fromBlob = await blobLoadDraft(slug);
+    if (fromBlob) return fromBlob;
+  }
+  return readJson<AnalysisReport>(draftReportPath(slug));
+}
+
+export async function loadPublishedReport(
+  slug: string
+): Promise<AnalysisReport | null> {
+  if (shouldUseBlobStorage()) {
+    const fromBlob = await blobLoadPublished(slug);
+    if (fromBlob) return fromBlob;
+  }
+  return readJson<AnalysisReport>(publishedReportPath(slug));
+}
+
+export async function saveDraftReport(report: AnalysisReport): Promise<void> {
+  const next = withPublishPaths(report);
+  if (shouldUseBlobStorage()) {
+    await blobSaveDraft(next);
+    return;
+  }
+  if (process.env.VERCEL) {
+    throw new Error(
+      "Vercel Blob이 연결되지 않았습니다. Vercel 대시보드 → Storage → Blob을 생성하세요."
+    );
+  }
+  writeJson(draftReportPath(next.slug), next);
 }
 
 export function loadReportsIndex(): ReportIndexEntry[] {
@@ -59,6 +92,7 @@ export function loadReportsIndex(): ReportIndexEntry[] {
 }
 
 function upsertReportIndex(entry: ReportIndexEntry) {
+  if (process.env.VERCEL) return;
   const list = loadReportsIndex();
   const i = list.findIndex((e) => e.slug === entry.slug);
   if (i >= 0) list[i] = entry;
@@ -67,11 +101,25 @@ function upsertReportIndex(entry: ReportIndexEntry) {
   writeJson(publishPaths.reportsIndex, list);
 }
 
-export function publishReport(slug: string): AnalysisReport {
-  const draft = loadDraftReport(slug);
-  if (!draft) {
-    throw new Error(`draft 리포트 없음: ${slug}`);
+/** 생성 직후 저장 누락 시 발행 전 복구 */
+export async function ensureDraftReport(
+  slug: string,
+  inline?: AnalysisReport | null
+): Promise<AnalysisReport> {
+  const existing = await loadDraftReport(slug);
+  if (existing) return existing;
+  if (inline?.slug === slug) {
+    await saveDraftReport(inline);
+    return inline;
   }
+  throw new Error(`draft 리포트 없음: ${slug}`);
+}
+
+export async function publishReport(
+  slug: string,
+  inline?: AnalysisReport | null
+): Promise<AnalysisReport> {
+  const draft = await ensureDraftReport(slug, inline);
   const publishedAt = new Date().toISOString();
   const published: AnalysisReport = {
     ...draft,
@@ -82,8 +130,18 @@ export function publishReport(slug: string): AnalysisReport {
       analysisPath: publicAnalysisPath(slug),
     },
   };
-  writeJson(publishedReportPath(slug), published);
-  saveDraftReport(published);
+
+  if (shouldUseBlobStorage()) {
+    await blobSavePublished(published);
+    await blobSaveDraft(published);
+  } else if (process.env.VERCEL) {
+    throw new Error(
+      "Vercel Blob이 연결되지 않았습니다. Vercel 대시보드 → Storage → Blob을 생성하세요."
+    );
+  } else {
+    writeJson(publishedReportPath(slug), published);
+    writeJson(draftReportPath(slug), published);
+  }
 
   upsertReportIndex({
     slug,
@@ -108,8 +166,11 @@ export type ReportPatch = {
   keywords?: AnalysisReport["keywords"];
 };
 
-export function patchDraftReport(slug: string, patch: ReportPatch): AnalysisReport {
-  const draft = loadDraftReport(slug);
+export async function patchDraftReport(
+  slug: string,
+  patch: ReportPatch
+): Promise<AnalysisReport> {
+  const draft = await loadDraftReport(slug);
   if (!draft) throw new Error(`draft 리포트 없음: ${slug}`);
 
   const updated: AnalysisReport = { ...draft };
@@ -164,14 +225,14 @@ export function patchDraftReport(slug: string, patch: ReportPatch): AnalysisRepo
     updated.keywords = patch.keywords;
   }
 
-  saveDraftReport(updated);
+  await saveDraftReport(updated);
   return updated;
 }
 
 /** @deprecated patchDraftReport 사용 */
-export function patchDraftSearch(
+export async function patchDraftSearch(
   slug: string,
   search: NonNullable<AnalysisReport["search"]>
-): AnalysisReport {
+): Promise<AnalysisReport> {
   return patchDraftReport(slug, { search });
 }

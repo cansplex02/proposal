@@ -108,6 +108,7 @@ export default function AnalysisPageView({
     initialMarketMap
   );
   const [currentSlug, setCurrentSlug] = useState<string | null>(initialSlug);
+  const [draftReport, setDraftReport] = useState<AnalysisReport | null>(null);
   const [publishStatus, setPublishStatus] = useState(initialPublishStatus);
   const [publishedAt, setPublishedAt] = useState(initialPublishedAt);
   const [adminSecret, setAdminSecret] = useState("");
@@ -137,6 +138,10 @@ export default function AnalysisPageView({
       setCurrentSlug(payload.slug);
       setPublishStatus("draft");
       setPublishedAt(undefined);
+    }
+
+    if (payload.report) {
+      setDraftReport(payload.report);
     }
 
     if (payload.beforeSearchHtml?.trim()) {
@@ -295,6 +300,7 @@ export default function AnalysisPageView({
                   focusTopics={keywordFormCtx.focusTopics}
                   treatmentMode={keywordFormCtx.treatmentMode}
                   resolvedAddress={resolvedAddress}
+                  readOnly={isPublic}
                 />
               ) : (
                 <p className="analysis-search-warn">
@@ -311,6 +317,7 @@ export default function AnalysisPageView({
                 publishStatus={publishStatus}
                 publishedAt={publishedAt}
                 adminSecret={adminSecret}
+                draftReport={draftReport}
                 onPublished={() => {
                   setPublishStatus("published");
                   setPublishedAt(new Date().toISOString());

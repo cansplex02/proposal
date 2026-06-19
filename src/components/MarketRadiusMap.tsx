@@ -32,7 +32,6 @@ export default function MarketRadiusMap({
   radiusKm,
   mapNote,
   embedUrl,
-  externalUrl = "https://bigdata.sbiz.or.kr/",
 }: Props) {
   const isSbiz365 = Boolean(embedUrl);
 
@@ -74,14 +73,6 @@ export default function MarketRadiusMap({
               : `반경 ${radiusKm}km · OpenStreetMap 미리보기`}
           </div>
         </div>
-        <a
-          className="map-area-link"
-          href={externalUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          365에서 크게 보기
-        </a>
       </div>
     </div>
   );

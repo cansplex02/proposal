@@ -11,13 +11,10 @@ import type { AnalysisReport } from "@/lib/analysis/types";
 import { adminUnauthorizedResponse, isAdminAuthorized } from "@/lib/publish/auth";
 
 import {
-
   loadDraftReport,
-
   patchDraftReport,
-
   publishReport,
-
+  saveDraftReport,
 } from "@/lib/publish/reportStore";
 
 import { buildReportPatchResponse } from "@/lib/publish/patchReportResponse";
@@ -36,7 +33,7 @@ export async function GET(_req: Request, { params }: Props) {
 
   const { slug } = await params;
 
-  const report = loadDraftReport(slug);
+  const report = await loadDraftReport(slug);
 
   if (!report) {
 
@@ -90,6 +87,32 @@ export async function GET(_req: Request, { params }: Props) {
 
 
 
+/** 생성 직후 draft 저장 (서버 저장 실패 시 클라이언트 백업용) */
+export async function PUT(req: Request, { params }: Props) {
+  if (!isAdminAuthorized(req)) return adminUnauthorizedResponse();
+
+  const { slug } = await params;
+  let body: { report?: AnalysisReport };
+  try {
+    body = (await req.json()) as { report?: AnalysisReport };
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const report = body.report;
+  if (!report || report.slug !== slug) {
+    return NextResponse.json({ error: "report.slug 불일치" }, { status: 400 });
+  }
+
+  try {
+    await saveDraftReport(report);
+    return NextResponse.json({ ok: true, slug });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "draft 저장 실패";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
 export async function PATCH(req: Request, { params }: Props) {
 
   if (!isAdminAuthorized(req)) return adminUnauthorizedResponse();
@@ -128,11 +151,11 @@ export async function PATCH(req: Request, { params }: Props) {
 
   try {
 
-    let report = patchDraftReport(slug, body);
+    let report = await patchDraftReport(slug, body);
 
     if (report.publish?.status === "published") {
 
-      report = publishReport(slug);
+      report = await publishReport(slug);
 
     }
 

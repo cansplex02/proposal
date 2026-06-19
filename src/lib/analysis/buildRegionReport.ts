@@ -7,8 +7,12 @@ import {
   placeholderPopulation,
 } from "./sbiz365";
 import { getSbiz365Labels, listSbiz365Readiness } from "./sbiz365Config";
-import { formatNumber, peakAgeInsight } from "./utils";
-import type { AnalysisReport, PopulationRow } from "./types";
+import {
+  buildStoreStatusMarket,
+  type StoreStatusMarket,
+} from "./sbiz365StoreStatus";
+import { demandMixCard, formatNumber, peakAgeInsight } from "./utils";
+import type { AnalysisReport, FacilityCount, PopulationRow } from "./types";
 
 const DEFAULT_RADIUS_M = 1500;
 
@@ -41,19 +45,44 @@ export async function buildRegionReport(
     address: geo.roadAddress,
   };
 
+  let storeStatus: StoreStatusMarket | null = null;
+  try {
+    storeStatus = await buildStoreStatusMarket(geo.roadAddress);
+  } catch (e) {
+    warnings.push(
+      e instanceof Error ? e.message : "소상공인365 업소현황 조회 실패"
+    );
+  }
+
   const {
     facilities,
     ok: facilitiesOk,
     error: facilitiesError,
     source: facilitySource,
   } = await fetchMarketFacilities(sbizCtx, stores);
-  if (!facilitiesOk && facilitiesError) {
+  // 업소현황(시군구 업종별)이 있으면 주요시설 폴백 경고는 표시하지 않음
+  if (!storeStatus && !facilitiesOk && facilitiesError) {
     warnings.push(facilitiesError);
   }
-  const medicalCount =
+
+  // 반경 기반 의료·복지 수 (반경 상가 불릿용)
+  const radiusMedicalCount =
     facilitySource === "store"
       ? countMedicalStores(stores)
       : (facilities.find((f) => f.label === "의료·복지")?.count ?? 0);
+
+  const marketFacilities: FacilityCount[] = storeStatus
+    ? storeStatus.facilities
+    : facilities;
+  const marketSource: AnalysisReport["market"]["facilitySource"] = storeStatus
+    ? "storeStatus"
+    : facilitySource;
+  const facilityCaption = storeStatus?.caption;
+  const medicalCardCount = storeStatus?.medicalCount ?? radiusMedicalCount;
+  const medicalCardTitle = storeStatus?.medicalCardTitle ?? "의료·복지 시설 밀집";
+  const storeStatusBullets = storeStatus?.medicalBullet
+    ? [storeStatus.medicalBullet]
+    : [];
 
   let popData = placeholderPopulation();
   const sbizReady = listSbiz365Readiness();
@@ -100,29 +129,43 @@ export async function buildRegionReport(
       insight: buildPopulationInsight(residential, workplace),
     },
     market: {
-      facilities,
-      facilitySource,
+      facilities: marketFacilities,
+      facilitySource: marketSource,
+      facilityCaption,
       summaryBullets: [
         `<strong>주거인구:</strong> ${peakAgeInsight(residential, "주거")}`,
         `<strong>직장인구:</strong> ${peakAgeInsight(workplace, "직장")}`,
-        `<strong>반경 ${radiusMeters / 1000}km 상가:</strong> ${formatNumber(stores.length)}개 업소 · 의료·복지 ${formatNumber(medicalCount)}개`,
+        ...storeStatusBullets,
+        `<strong>반경 ${radiusMeters / 1000}km 상가:</strong> ${formatNumber(stores.length)}개 업소${storeStatus ? "" : ` · 의료·복지 ${formatNumber(radiusMedicalCount)}개`}`,
       ],
       miniCards: [
         {
-          title: "의료·복지 시설 밀집",
-          sub: `(${formatNumber(medicalCount)}개)`,
+          title: medicalCardTitle,
+          value: `${formatNumber(medicalCardCount)}개`,
+          sub: storeStatus ? "시군구 전체 기준" : `반경 ${radiusMeters / 1000}km 내`,
+          accent: "green",
+          icon: "medical",
+          trend:
+            storeStatus?.medicalUpdownPer !== undefined
+              ? {
+                  text: `${Math.abs(storeStatus.medicalUpdownPer)}% 직전 반기 대비`,
+                  dir:
+                    storeStatus.medicalUpdownPer > 0
+                      ? "up"
+                      : storeStatus.medicalUpdownPer < 0
+                        ? "down"
+                        : "flat",
+                }
+              : undefined,
         },
         {
           title: "상권 업소 밀도",
-          sub: `총 ${formatNumber(stores.length)}개`,
+          value: `${formatNumber(stores.length)}개`,
+          sub: `반경 ${radiusMeters / 1000}km 상가`,
+          accent: "blue",
+          icon: "store",
         },
-        {
-          title: "주거+직장 혼합 수요",
-          sub:
-            residential.total && workplace.total
-              ? "소상공인365·상가 API 기준"
-              : "인구·유동 데이터 확인 권장",
-        },
+        demandMixCard(residential.total, workplace.total),
       ],
       mapNote: `${geo.roadAddress} 중심 반경 ${radiusMeters / 1000}km`,
     },
@@ -138,6 +181,7 @@ export async function buildRegionReport(
         isSbiz365Configured()
           ? "소상공인365 상세분석"
           : "소상공인365 (미연동)",
+        ...(storeStatus ? ["소상공인365 업소현황"] : []),
         "카카오/네이버 지오코딩",
       ],
       warnings: warnings.length ? warnings : undefined,

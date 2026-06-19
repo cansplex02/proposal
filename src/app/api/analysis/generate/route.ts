@@ -15,10 +15,12 @@ import {
   suggestSlugFromClinicName,
 } from "@/lib/analysis/suggestSlug";
 import { publicProposalPath } from "@/lib/publish/paths";
+import { saveDraftReport } from "@/lib/publish/reportStore";
 import type { AnalysisInput } from "@/lib/analysis/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
+export const preferredRegion = "icn1";
 
 export async function POST(req: Request) {
   const secret = process.env.ANALYSIS_ADMIN_SECRET;
@@ -91,8 +93,11 @@ export async function POST(req: Request) {
 
     let paths: { jsonPath: string; htmlPath: string } | undefined;
     let saveError: string | undefined;
+    let draftSaved = false;
     const publicPath = publicProposalPath(report.slug);
     try {
+      await saveDraftReport(report);
+      draftSaved = true;
       if (!process.env.VERCEL) {
         paths = writeAnalysisOutputs(report, html);
         const inputDir = path.join(process.cwd(), "data", "analysis-inputs");
@@ -102,7 +107,6 @@ export async function POST(req: Request) {
           JSON.stringify(input, null, 2),
           "utf8"
         );
-        /* 발행은 작업실에서 수동 수정 후 「공개 발행」으로 처리 */
       }
     } catch (e) {
       saveError =
@@ -122,6 +126,8 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       slug: report.slug,
+      report,
+      draftSaved,
       publicPath,
       publishStatus: "draft" as const,
       search: report.search ?? null,

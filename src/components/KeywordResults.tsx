@@ -13,6 +13,8 @@ type Props = {
   focusTopics: string;
   treatmentMode: TreatmentMode;
   resolvedAddress?: string;
+  /** 고객 공유 페이지 — 저장된 표 그대로 표시, 재계산 안 함 */
+  readOnly?: boolean;
 };
 
 export default function KeywordResults({
@@ -22,6 +24,7 @@ export default function KeywordResults({
   focusTopics,
   treatmentMode,
   resolvedAddress,
+  readOnly = false,
 }: Props) {
   const [editedRegions, setEditedRegions] = useState(initialRegions.join(", "));
   const [result, setResult] = useState(initialKeywords);
@@ -32,6 +35,7 @@ export default function KeywordResults({
   }, [initialKeywords, initialRegions]);
 
   useEffect(() => {
+    if (readOnly) return;
     const regions = editedRegions
       .split(/[,，\n]/)
       .map((s) => s.trim())
@@ -44,7 +48,7 @@ export default function KeywordResults({
     setResult(
       buildKeywordSection(specialty, regions, focus, treatmentMode)
     );
-  }, [editedRegions, specialty, focusTopics, treatmentMode]);
+  }, [editedRegions, specialty, focusTopics, treatmentMode, readOnly]);
 
   const topicCols = result.columns.filter((c) => c.id !== "region");
 
@@ -69,17 +73,23 @@ export default function KeywordResults({
       <div className="keyword-generator-form keyword-generator-regions-panel">
         <label>
           <span className="keyword-generator-label">
-            지역 키워드 (쉼표 구분 · 수정 시 표가 자동 갱신)
+            {readOnly ? "지역 키워드" : "지역 키워드 (쉼표 구분 · 수정 시 표가 자동 갱신)"}
           </span>
-          <input
-            className="keyword-generator-regions-edit"
-            value={editedRegions}
-            onChange={(e) => setEditedRegions(e.target.value)}
-          />
+          {readOnly ? (
+            <p className="keyword-generator-regions-readonly">{editedRegions}</p>
+          ) : (
+            <input
+              className="keyword-generator-regions-edit"
+              value={editedRegions}
+              onChange={(e) => setEditedRegions(e.target.value)}
+            />
+          )}
         </label>
-        <p className="keyword-generator-hint">
-          역·동·구를 추가·삭제하면 아래 표가 바로 반영됩니다.
-        </p>
+        {!readOnly ? (
+          <p className="keyword-generator-hint">
+            역·동·구를 추가·삭제하면 아래 표가 바로 반영됩니다.
+          </p>
+        ) : null}
       </div>
 
       <div className="keyword-generator-actions">

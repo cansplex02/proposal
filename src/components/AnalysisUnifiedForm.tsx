@@ -30,7 +30,6 @@ export default function AnalysisUnifiedForm({
   const [address, setAddress] = useState(initialAddress);
   const [mainSearchKeyword, setMainSearchKeyword] = useState("");
   const [treatmentMode, setTreatmentMode] = useState<TreatmentMode>("nonsurgery");
-  const [focusTopics, setFocusTopics] = useState("");
   const [secret, setSecret] = useState("");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -83,10 +82,6 @@ export default function AnalysisUnifiedForm({
       specialty: specialty.trim(),
       address: addr || undefined,
       mainSearchKeyword: mainSearchKeyword.trim() || undefined,
-      keywordTopics: focusTopics
-        .split(/[,，]/)
-        .map((s) => s.trim())
-        .filter(Boolean),
       treatmentMode,
       radiusMeters: 1500,
       includeMapAds: true,
@@ -116,11 +111,31 @@ export default function AnalysisUnifiedForm({
         rivalCount: data.rivalCount,
       });
 
+      let draftBackupOk = Boolean(data.draftSaved);
+      if (data.report?.slug) {
+        const putHeaders: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        if (secret) putHeaders.Authorization = `Bearer ${secret}`;
+        try {
+          const putRes = await fetch(`/api/analysis/report/${data.slug}`, {
+            method: "PUT",
+            headers: putHeaders,
+            body: JSON.stringify({ report: data.report }),
+          });
+          draftBackupOk = putRes.ok;
+        } catch {
+          draftBackupOk = false;
+        }
+      }
+
       onGenerated({
         slug: data.slug,
         publicPath: data.publicPath,
         publishStatus: data.publishStatus,
         publishedAt: data.publishedAt,
+        report: data.report,
+        draftSaved: draftBackupOk,
         search: search ?? undefined,
         searchBody: data.searchBody,
         beforeSearchHtml: data.beforeSearchHtml,
@@ -139,7 +154,7 @@ export default function AnalysisUnifiedForm({
         keywordRegions: data.keywordRegions,
         formContext: {
           specialty: specialty.trim(),
-          focusTopics: focusTopics.trim(),
+          focusTopics: "",
           treatmentMode,
         },
       });
@@ -165,6 +180,9 @@ export default function AnalysisUnifiedForm({
           : null,
         data.warnings?.length
           ? data.warnings.map((w: string) => `⚠ ${w}`).join("\n")
+          : null,
+        !draftBackupOk
+          ? "⚠ draft 저장 실패 — 개별링크 만들기 전에 다시 생성해 주세요."
           : null,
       ].filter(Boolean);
       setStatus(lines.join("\n"));
@@ -267,15 +285,6 @@ export default function AnalysisUnifiedForm({
                 수술
               </button>
             </div>
-          </label>
-          <label>
-            <span className="keyword-generator-label">공략 키워드 (선택)</span>
-            <input
-              value={focusTopics}
-              onChange={(e) => setFocusTopics(e.target.value)}
-              placeholder="예: 허리디스크"
-              disabled={loading}
-            />
           </label>
         </div>
 

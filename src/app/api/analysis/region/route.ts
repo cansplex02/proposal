@@ -4,6 +4,7 @@ import { renderRegionDemographicsMarketHtml } from "@/lib/analysis/renderHtml";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
+export const preferredRegion = "icn1";
 
 export async function POST(req: Request) {
   let body: { address?: string; radiusMeters?: number };

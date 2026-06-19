@@ -1,5 +1,6 @@
 import type { FacilityCount } from "./types";
 import { aggregateFacilities } from "./sbizStore";
+import { sbizFetch } from "./sbizFetch";
 import { getSbiz365ApiKey, isSbiz365ApiReady } from "./sbiz365Config";
 import {
   wgs84ToTm,
@@ -90,7 +91,7 @@ export async function fetchMarketFacilities(
     }
   }
 
-  if (stores.length > 0) {
+  if (stores.length > 0 && process.env.SBIZ365_FACILITY_STORE_FALLBACK === "1") {
     return {
       facilities: aggregateFacilities(stores),
       ok: true,
@@ -163,7 +164,60 @@ function sbizHeaders(cookie: string, extra: Record<string, string> = {}) {
   };
 }
 
-/** sang_gwon1.sg HTML — statusOfFacs([...]) 파싱 */
+type AdminDistrict = { admiCd: string; admiNm: string };
+
+async function resolveAdminDistrict(
+  cookie: string,
+  tm: { x: number; y: number }
+): Promise<AdminDistrict | null> {
+  const pad = 500;
+  const qs = new URLSearchParams({
+    minXAxis: String(tm.x - pad),
+    maxXAxis: String(tm.x + pad),
+    minYAxis: String(tm.y - pad),
+    maxYAxis: String(tm.y + pad),
+    mapLevel: "3",
+  });
+  const res = await sbizFetch(
+    `${BASE}/gis/api/getCoordToAdmPoint.json?${qs}`,
+    { headers: sbizHeaders(cookie, { Accept: "application/json" }) },
+    "행정동"
+  ).catch(() => null);
+  if (!res?.ok) return null;
+  const text = await res.text().catch(() => "");
+  try {
+    const rows = JSON.parse(text) as {
+      dongCd?: string;
+      admdstCdNm?: string;
+    }[];
+    const row = rows?.[0];
+    if (!row?.dongCd) return null;
+    return {
+      admiCd: String(row.dongCd),
+      admiNm: String(row.admdstCdNm ?? ""),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchFacilitiesHtml(
+  cookie: string,
+  path: string,
+  qs: URLSearchParams
+): Promise<string | null> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 400 * attempt));
+    const res = await sbizFetch(`${BASE}/gis/bizonAnls/report/sg/${path}?${qs}`, {
+      headers: sbizHeaders(cookie, { Accept: "text/html" }),
+    }, "주요시설");
+    const html = await res.text();
+    if (parseFacilitiesFromSangGwon1(html)) return html;
+  }
+  return null;
+}
+
+/** sang_gwon1.sg / sang_gwon6.sg HTML — statusOfFacs([...]) 파싱 */
 export function parseFacilitiesFromSangGwon1(html: string): FacilityCount[] | null {
   const m =
     html.match(/statusOfFacs\s*\(\s*\[([^\]]+)\]/i) ??
@@ -186,6 +240,7 @@ async function fetchFacilitiesFromSangGwon1(
   try {
     return await fetchFacilitiesFromSangGwon1WithFetch(ctx, certKey);
   } catch {
+    if (process.env.VERCEL) return null;
     return fetchFacilitiesFromSangGwon1WithPlaywright(ctx, certKey);
   }
 }
@@ -198,20 +253,25 @@ async function fetchFacilitiesFromSangGwon1WithFetch(
   const warmUrl =
     `${BASE}/gis/openApi/detail?certKey=${encodeURIComponent(certKey)}` +
     `&lat=${ctx.lat}&lng=${ctx.lng}&type=detail&rptpType=bizonAnls`;
-  const warm = await fetch(warmUrl, {
+  const warm = await sbizFetch(warmUrl, {
     headers: sbizHeaders(cookie, { Accept: "text/html" }),
     redirect: "follow",
-  });
+  }, "주요시설 세션");
   cookie = mergeCookies(cookie, warm);
   await warm.text().catch(() => "");
 
-  await fetch(`${BASE}/gis/api/getTpbizLcd`, {
+  const tpbizRes = await sbizFetch(`${BASE}/gis/api/getTpbizLcd`, {
     headers: sbizHeaders(cookie, { Accept: "application/json" }),
-  }).catch(() => null);
+  }, "주요시설 업종").catch(() => null);
+  if (tpbizRes) {
+    cookie = mergeCookies(cookie, tpbizRes);
+    await tpbizRes.text().catch(() => "");
+  }
 
   const tm = wgs84ToTm(ctx.lng, ctx.lat);
+  const admin = await resolveAdminDistrict(cookie, tm);
   const upjongCd = process.env.SBIZ365_UPJONG_CD?.trim() || "Q1";
-  const capRes = await fetch(`${BASE}/gis/com/report/capture.json`, {
+  const capRes = await sbizFetch(`${BASE}/gis/com/report/capture.json`, {
     method: "POST",
     headers: sbizHeaders(cookie, {
       "Content-Type": "application/json;charset=utf-8",
@@ -232,7 +292,7 @@ async function fetchFacilitiesFromSangGwon1WithFetch(
       apiLogin: "N",
       sprNo: 0,
     }),
-  });
+  }, "주요시설 capture");
   cookie = mergeCookies(cookie, capRes);
   const cap = (await capRes.json()) as {
     analyNo?: number;
@@ -243,7 +303,7 @@ async function fetchFacilitiesFromSangGwon1WithFetch(
     throw new Error("[주요시설] capture analyNo 없음");
   }
 
-  const qs = new URLSearchParams({
+  const fullQs = new URLSearchParams({
     analyNo: String(cap.analyNo),
     analyDate: cap.analyDate ?? "",
     upjongCd,
@@ -257,22 +317,40 @@ async function fetchFacilitiesFromSangGwon1WithFetch(
     apiLogin: "",
     lKey: "",
     xtLoginId: certKey,
+    admiCd: admin?.admiCd ?? "",
+    admiNm: admin?.admiNm ?? "",
+    kmAnalyNo: cap.kmAnalyNo ? String(cap.kmAnalyNo) : "",
   });
-  if (cap.kmAnalyNo) qs.set("kmAnalyNo", String(cap.kmAnalyNo));
 
-  let html = "";
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (attempt > 0) await new Promise((r) => setTimeout(r, 400 * attempt));
-    const res = await fetch(
-      `${BASE}/gis/bizonAnls/report/sg/sang_gwon1.sg?${qs}`,
-      { headers: sbizHeaders(cookie, { Accept: "text/html" }) }
-    );
-    html = await res.text();
-    const parsed = parseFacilitiesFromSangGwon1(html);
-    if (parsed) return parsed;
+  const admiQs = new URLSearchParams({
+    analyNo: String(cap.analyNo),
+    analyDate: cap.analyDate ?? "",
+    upjongCd,
+    admiCd: admin?.admiCd ?? "",
+    admiNm: admin?.admiNm ?? "",
+    kmAnalyNo: String(cap.kmAnalyNo ?? cap.analyNo),
+    xtLoginId: certKey,
+  });
+
+  // 인구(sg4)와 동일 — 앞 탭·sg4 호출 후 지역현황(sg1/sg6) 조회
+  for (const sg of ["sang_gwon1.sg", "sang_gwon2.sg", "sang_gwon3.sg"]) {
+    await sbizFetch(`${BASE}/gis/bizonAnls/report/sg/${sg}?${fullQs}`, {
+      headers: sbizHeaders(cookie, { Accept: "text/html" }),
+    }, "주요시설 준비").catch(() => null);
+  }
+  await sbizFetch(`${BASE}/gis/bizonAnls/report/sg/sang_gwon4.sg?${fullQs}`, {
+    headers: sbizHeaders(cookie, { Accept: "text/html" }),
+  }, "주요시설 준비").catch(() => null);
+
+  for (const path of ["sang_gwon1.sg", "sang_gwon6.sg"]) {
+    for (const qs of [fullQs, admiQs]) {
+      const html = await fetchFacilitiesHtml(cookie, path, qs);
+      const parsed = html ? parseFacilitiesFromSangGwon1(html) : null;
+      if (parsed) return parsed;
+    }
   }
 
-  throw new Error(`[주요시설] sang_gwon1 실패: ${html.slice(0, 120)}`);
+  throw new Error("[주요시설] sang_gwon1·6 응답 없음 (365 API)");
 }
 
 async function fetchFacilitiesFromSangGwon1WithPlaywright(

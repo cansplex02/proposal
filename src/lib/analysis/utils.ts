@@ -18,6 +18,49 @@ export function formatNumber(n: number): string {
   return Math.round(n).toLocaleString("ko-KR");
 }
 
+/** 큰 수를 만/억 단위로 압축 (예: 162438 → "16.2만") */
+export function compactKoNumber(n: number): string {
+  const v = Math.round(n);
+  if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(1).replace(/\.0$/, "")}억`;
+  if (v >= 10_000) return `${(v / 10_000).toFixed(1).replace(/\.0$/, "")}만`;
+  return formatNumber(v);
+}
+
+type MiniCardData = {
+  title: string;
+  sub: string;
+  value?: string;
+  accent?: "blue" | "green" | "violet";
+  icon?: "medical" | "store" | "people";
+  trend?: { text: string; dir: "up" | "down" | "flat" };
+};
+
+/** 주거/직장 인구 구성으로 수요 유형(주거형·직장형·혼합형) 미니카드 생성 */
+export function demandMixCard(
+  residentialTotal: number,
+  workplaceTotal: number
+): MiniCardData {
+  const hasPop = residentialTotal > 0 && workplaceTotal > 0;
+  if (!hasPop) {
+    return {
+      title: "주거+직장 혼합 수요",
+      sub: "인구·유동 데이터 확인 권장",
+      accent: "violet",
+      icon: "people",
+    };
+  }
+  let label = "혼합형";
+  if (workplaceTotal > residentialTotal * 1.3) label = "직장 중심형";
+  else if (residentialTotal > workplaceTotal * 1.3) label = "주거 중심형";
+  return {
+    title: "주거+직장 수요 유형",
+    value: label,
+    sub: `주거 ${compactKoNumber(residentialTotal)} · 직장 ${compactKoNumber(workplaceTotal)}`,
+    accent: "violet",
+    icon: "people",
+  };
+}
+
 /** 검색량 막대 너비(%) — 최댓값 대비 실제 비율 */
 export function searchVolumeBarWidth(volume: number, maxVolume: number): number {
   if (maxVolume <= 0 || volume <= 0) return 0;

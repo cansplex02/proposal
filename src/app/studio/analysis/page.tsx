@@ -22,7 +22,7 @@ export default async function AnalysisStudioPage({ searchParams }: Props) {
   const html = loadHtmlFile("analysis-body.html");
   const { beforeSearch, searchIntro, intro, after } = splitAnalysisBody(html);
 
-  const draft = slug?.trim() ? loadDraftReport(slug.trim()) : null;
+  const draft = slug?.trim() ? await loadDraftReport(slug.trim()) : null;
   const loaded = draft ? buildStudioLoadProps(draft) : null;
 
   return (

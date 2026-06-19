@@ -149,3 +149,14 @@ function escapeHtmlLite(s: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
+
+/** 경쟁분석 → 개별 제안서 링크 (/p/{slug}) */
+export function patchAnalysisProposalBackHref(
+  html: string,
+  proposalPath: string
+): string {
+  return html.replace(
+    /href="\/"( class="(?:nav-back|footer-back)")/g,
+    `href="${proposalPath}"$1`
+  );
+}

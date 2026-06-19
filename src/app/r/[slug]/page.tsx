@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import AnalysisPageView from "@/components/AnalysisPageView";
 import PublicAnalysisNav from "@/components/PublicAnalysisNav";
-import { loadHtmlFile } from "@/lib/loadContent";
-import { splitAnalysisBody } from "@/lib/analysis/splitAnalysisBody";
 import { buildPublishedAnalysisProps } from "@/lib/publish/buildPublishedAnalysisProps";
 import {
   loadDraftReport,
@@ -17,7 +15,8 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const report = loadPublishedReport(slug) ?? loadDraftReport(slug);
+  const report =
+    (await loadPublishedReport(slug)) ?? (await loadDraftReport(slug));
   return {
     title: report
       ? `CANSPLEX · ${report.clinicName || slug} 경쟁분석`
@@ -28,11 +27,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PublicReportPage({ params }: Props) {
   const { slug } = await params;
-  const report = loadPublishedReport(slug) ?? loadDraftReport(slug);
+  const report =
+    (await loadPublishedReport(slug)) ?? (await loadDraftReport(slug));
   if (!report) notFound();
 
-  const shell = loadHtmlFile("analysis-body.html");
-  const { searchIntro, intro, after } = splitAnalysisBody(shell);
   const loaded = buildPublishedAnalysisProps(report);
 
   return (
@@ -41,10 +39,10 @@ export default async function PublicReportPage({ params }: Props) {
       <AnalysisPageView
       mode="public"
       beforeSearch={loaded.beforeSearch}
-      searchIntro={searchIntro}
+      searchIntro={loaded.searchIntro}
       searchBody=""
-      keywordsIntro={intro}
-      htmlAfter={after}
+      keywordsIntro={loaded.keywordsIntro}
+      htmlAfter={loaded.htmlAfter}
       showInitialSearchResults
       initialSearchData={loaded.initialSearchData}
       initialMarketMap={loaded.marketMap}

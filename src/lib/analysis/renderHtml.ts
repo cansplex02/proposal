@@ -6,17 +6,37 @@ import { KEYWORD_PROPOSAL_NOTICE } from "./keywords";
 import {
   splitAnalysisBody,
   splitNavHeroAndDemographics,
+  patchAnalysisProposalBackHref,
 } from "./splitAnalysisBody";
 import {
   buildSbiz365MarketMapEmbedUrl,
   sbiz365MarketMapExternalUrl,
 } from "./sbiz365MarketMap";
+import { publicProposalPath } from "@/lib/publish/paths";
 import { formatNumber, pct, searchVolumeBarWidth } from "./utils";
 
 const contentDir = path.join(process.cwd(), "src", "content");
 
+/** 고객 공유 페이지 히어로 — 내부·기술 안내는 숨김 (작업실 폼 status용) */
+function filterPublicHeroWarnings(warnings: string[]): string[] {
+  return warnings.filter(
+    (w) =>
+      !/주요시설|업소현황|KAKAO|POI|상가 API|SBIZ365_|sang_gwon|Playwright|\.env\.local|fetch failed|Unauthorized|인증키 미설정|API 실패|미연동|업종 매핑/i.test(
+        w
+      )
+  );
+}
+
 export function loadAnalysisTemplate(): string {
   return fs.readFileSync(path.join(contentDir, "analysis-body.html"), "utf8");
+}
+
+/** 히어로에 박힌 내부 안내 문구 제거 (저장된 HTML·재렌더 공통) */
+export function stripInternalHeroWarningsFromHtml(html: string): string {
+  return html.replace(
+    /\s*<p class="section-sub" style="margin-top:-40px;color:#b45309;">[\s\S]*?<\/p>/g,
+    ""
+  );
 }
 
 export function renderAnalysisHtml(
@@ -50,15 +70,22 @@ export function renderAnalysisHtml(
     );
   }
 
-  if (report.meta?.warnings?.length) {
-    const note = `<p class="section-sub" style="margin-top:-40px;color:#b45309;">⚠ ${escapeHtml(report.meta.warnings.join(" · "))}</p>`;
+  const heroWarnings = filterPublicHeroWarnings(report.meta?.warnings ?? []);
+  if (heroWarnings.length) {
+    const note = `<p class="section-sub" style="margin-top:-40px;color:#b45309;">⚠ ${escapeHtml(heroWarnings.join(" · "))}</p>`;
     html = html.replace(
       '<p class="hero-sub">',
       `${note}\n    <p class="hero-sub">`
     );
   }
 
-  return html;
+  if (report.slug) {
+    const proposalPath =
+      report.publish?.publicPath ?? publicProposalPath(report.slug);
+    html = patchAnalysisProposalBackHref(html, proposalPath);
+  }
+
+  return stripInternalHeroWarningsFromHtml(html);
 }
 
 /** 섹션 01·02(인구·상권) HTML — 지역 검색 전용 */
@@ -271,6 +298,44 @@ function renderMarketMap(r: AnalysisReport): string {
     ></div>`;
 }
 
+const MINI_CARD_ICONS: Record<string, string> = {
+  medical: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg>`,
+  store: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5 5.2 5h13.6L20 9.5M4 9.5h16M4 9.5v9.5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9.5M9.5 20v-5h5v5"/></svg>`,
+  people: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0M16 5.5a3 3 0 0 1 0 5M20.5 19.5a5.5 5.5 0 0 0-4-5.3"/></svg>`,
+};
+
+type MiniCard = AnalysisReport["market"]["miniCards"][number];
+
+function renderMiniCard(m: MiniCard): string {
+  const accent = m.accent ? ` mini-card--${m.accent}` : "";
+  const icon =
+    m.icon && MINI_CARD_ICONS[m.icon]
+      ? `<div class="mini-card-icon">${MINI_CARD_ICONS[m.icon]}</div>`
+      : "";
+  const value = m.value
+    ? `<div class="mini-card-value">${escapeHtml(m.value)}</div>`
+    : "";
+  const trend = m.trend
+    ? `<div class="mini-card-trend mini-card-trend--${m.trend.dir}">${
+        m.trend.dir === "up" ? "▲" : m.trend.dir === "down" ? "▼" : "−"
+      } ${escapeHtml(m.trend.text)}</div>`
+    : "";
+  return `<div class="mini-card${accent}">
+      ${icon}
+      ${value}
+      <div class="mini-card-title">${escapeHtml(m.title)}</div>
+      <div class="mini-card-sub">${escapeHtml(m.sub)}</div>
+      ${trend}
+    </div>`;
+}
+
+function renderFacilityDelta(delta: number | undefined): string {
+  if (delta === undefined || delta === null) return "";
+  const arrow = delta > 0 ? "▲" : delta < 0 ? "▼" : "−";
+  const color = delta > 0 ? "#16a34a" : delta < 0 ? "#dc2626" : "#94a3b8";
+  return `<div class="facility-bar-delta" style="font-size:11px;color:${color};margin-top:2px;">${arrow} ${Math.abs(delta)}%</div>`;
+}
+
 function renderMarketSection(r: AnalysisReport): string {
   const max = Math.max(...r.market.facilities.map((f) => f.count), 1);
   const bars = r.market.facilities
@@ -279,6 +344,7 @@ function renderMarketSection(r: AnalysisReport): string {
       return `<div class="facility-bar-group">
           <div class="facility-bar-value">${formatNumber(f.count)}</div>
           <div class="facility-bar" style="height: ${h}%; background: ${f.color || "#2b5cd9"};"></div>
+          ${renderFacilityDelta(f.deltaPercent)}
         </div>`;
     })
     .join("\n        ");
@@ -286,38 +352,49 @@ function renderMarketSection(r: AnalysisReport): string {
     .map((f) => `<span>${escapeHtml(f.label)}</span>`)
     .join("\n        ");
 
+  const hasDeltas = r.market.facilities.some(
+    (f) => f.deltaPercent !== undefined && f.deltaPercent !== null
+  );
+  const deltaNote = hasDeltas
+    ? `<p class="facility-chart-note" style="margin-top:12px;font-size:12px;line-height:1.5;color:#64748b;">
+      막대 위 숫자는 <strong>현재 업소수</strong>, 막대 아래 <strong>%</strong>는 <strong>직전 반기 대비 증감률</strong>입니다.
+      <span style="color:#16a34a;font-weight:600;">▲ 증가</span> · <span style="color:#dc2626;font-weight:600;">▼ 감소</span> — 해당 업종이 늘고 있는지 줄고 있는지를 보여줍니다.
+    </p>`
+    : "";
+
   const bullets = r.market.summaryBullets
     .map((b) => `<li>${b}</li>`)
     .join("\n      ");
-  const mini = r.market.miniCards
-    .map(
-      (m) => `<div class="mini-card">
-      <div class="mini-card-title">${escapeHtml(m.title)}</div>
-      <div class="mini-card-sub">${escapeHtml(m.sub)}</div>
-    </div>`
-    )
-    .join("\n    ");
+  const mini = r.market.miniCards.map(renderMiniCard).join("\n    ");
 
   const src = r.market.facilitySource;
+  const caption = r.market.facilityCaption;
   const isStoreChart = src === "store";
-  const chartLabel = isStoreChart
-    ? `주변 업종 현황 (${r.radiusKm}km)`
-    : `주변 주요시설 현황 (${r.radiusKm}km)`;
-  const chartSub = isStoreChart
-    ? `반경 ${r.radiusKm}km 인프라 및 상권 핵심 지표 (상가 API 집계).`
-    : src === "kakao"
-      ? `반경 ${r.radiusKm}km 주요시설 집계 (지도 POI 기준).`
-      : `반경 ${r.radiusKm}km 주요시설·상권 지표 (소상공인365 상권분석).`;
+  const chartLabel = caption
+    ? caption.title
+    : isStoreChart
+      ? `주변 업종 현황 (${r.radiusKm}km)`
+      : `주변 주요시설 현황 (${r.radiusKm}km)`;
+  const chartSub = caption
+    ? caption.sub
+    : isStoreChart
+      ? `반경 ${r.radiusKm}km 인프라 및 상권 핵심 지표 (상가 API 집계).`
+      : src === "kakao"
+        ? `반경 ${r.radiusKm}km 주요시설 집계 (지도 POI 기준).`
+        : `반경 ${r.radiusKm}km 주요시설·상권 지표 (소상공인365 상권분석).`;
 
-  return `  <div class="section-num">02 · 상권 정보</div>
-  <h2 class="section-title">주변시설 및 <strong>상권 기본 정보</strong></h2>
-  <p class="section-sub">${chartSub}</p>
+  return `  <div class="section-intro">
+    <div class="section-num">02 · 상권 정보</div>
+    <h2 class="section-title">주변시설 및 <strong>상권 기본 정보</strong></h2>
+    <p class="section-sub">${chartSub}</p>
+  </div>
 
   <div class="market-grid">
     <div class="card">
       <div class="card-label">${chartLabel}</div>
       <div class="facility-chart">${bars}</div>
       <div class="facility-labels">${labels}</div>
+      ${deltaNote}
     </div>
     <div class="card">
       <div class="card-label">상권 기본 정보 (반경 ${r.radiusKm}km)</div>
@@ -385,11 +462,12 @@ export function renderSearchResultsHtml(report: AnalysisReport): string {
 }
 
 export function renderSearchUnavailableHtml(report: AnalysisReport): string {
-  const msgs = report.meta?.warnings?.length
-    ? report.meta.warnings
-    : [
-        "경쟁병원·검색량을 자동 수집하지 못했습니다. .env.local API 키·Playwright(chromium) 설치를 확인하세요.",
-      ];
+  const msgs = filterPublicHeroWarnings(report.meta?.warnings ?? []);
+  if (!msgs.length) {
+    return `<div class="analysis-search-unavailable">
+    <p class="analysis-search-warn">경쟁병원·검색량 데이터를 불러오지 못했습니다.</p>
+  </div>`;
+  }
   return `<div class="analysis-search-unavailable">
     <p class="analysis-search-warn">⚠ ${escapeHtml(msgs.join(" · "))}</p>
   </div>`;
