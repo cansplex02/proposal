@@ -276,7 +276,13 @@ export default function AnalysisPageView({
                     data={searchData}
                     adminSecret={adminSecret}
                     defaultOpen={hasGenerated}
-                    onSaved={(next) => setSearchData(next)}
+                    onSaved={(next) => {
+                      setSearchData(next);
+                      setMapQuery(next.meta?.mapQuery ?? mapQuery);
+                      setDraftReport((prev) =>
+                        prev ? { ...prev, search: next } : prev
+                      );
+                    }}
                   />
                 </div>
               </>

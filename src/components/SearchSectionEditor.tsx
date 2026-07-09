@@ -179,7 +179,7 @@ export default function SearchSectionEditor({
           </thead>
           <tbody>
             {competitors.map((row, i) => (
-              <tr key={`${row.name}-${i}`}>
+              <tr key={i}>
                 <td>
                   <input
                     value={row.name}
@@ -256,7 +256,7 @@ export default function SearchSectionEditor({
           </thead>
           <tbody>
             {matrix.map((row, i) => (
-              <tr key={`${row.hospital}-${i}`}>
+              <tr key={i}>
                 <td>{row.hospital}</td>
                 {CHANNEL_KEYS.map((k) => (
                   <td key={k}>
