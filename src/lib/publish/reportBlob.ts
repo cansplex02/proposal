@@ -30,8 +30,12 @@ async function readJson(pathname: string): Promise<string | null> {
   try {
     const token = blobToken();
     const meta = await head(pathname, { token });
-    const res = await fetch(meta.url, {
+    // Blob URL은 고정(addRandomSuffix:false)이라 CDN이 옛 내용을 캐싱한다.
+    // 고유 쿼리로 캐시를 무력화해 덮어쓴 최신본을 항상 읽는다.
+    const sep = meta.url.includes("?") ? "&" : "?";
+    const res = await fetch(`${meta.url}${sep}cb=${Date.now()}`, {
       headers: { authorization: `Bearer ${token}` },
+      cache: "no-store",
     });
     if (!res.ok) return null;
     return res.text();
@@ -46,6 +50,7 @@ async function writeJson(pathname: string, data: unknown): Promise<void> {
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: "application/json",
+    cacheControlMaxAge: 0,
     token: blobToken(),
   });
 }
