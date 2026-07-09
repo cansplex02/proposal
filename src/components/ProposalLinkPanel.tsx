@@ -93,7 +93,8 @@ export default function ProposalLinkPanel({
     setLoading(true);
     try {
       if (!(await persistDraft())) return;
-      window.open(path, "_blank", "noopener,noreferrer");
+      const previewUrl = `${path}${path.includes("?") ? "&" : "?"}preview=1`;
+      window.open(previewUrl, "_blank", "noopener,noreferrer");
     } finally {
       setLoading(false);
     }

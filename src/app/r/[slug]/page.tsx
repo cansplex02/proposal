@@ -11,7 +11,20 @@ import "@/styles/analysis.css";
 import "@/styles/studio.css";
 import "@/styles/responsive.css";
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ preview?: string }>;
+};
+
+async function loadReportForView(
+  slug: string,
+  preview: boolean
+): Promise<Awaited<ReturnType<typeof loadDraftReport>>> {
+  if (preview) {
+    return (await loadDraftReport(slug)) ?? (await loadPublishedReport(slug));
+  }
+  return (await loadPublishedReport(slug)) ?? (await loadDraftReport(slug));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -25,10 +38,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function PublicReportPage({ params }: Props) {
+export default async function PublicReportPage({
+  params,
+  searchParams,
+}: Props) {
   const { slug } = await params;
-  const report =
-    (await loadPublishedReport(slug)) ?? (await loadDraftReport(slug));
+  const { preview } = await searchParams;
+  const report = await loadReportForView(slug, preview === "1");
   if (!report) notFound();
 
   const loaded = buildPublishedAnalysisProps(report);
