@@ -5,9 +5,12 @@ export function buildClientProposalHtml(
   ctx: {
     slug: string;
     clinicName?: string;
+    preview?: boolean;
   }
 ): string {
-  const analysisHref = `/r/${encodeURIComponent(ctx.slug)}`;
+  const analysisHref = `/r/${encodeURIComponent(ctx.slug)}${
+    ctx.preview ? "?preview=1" : ""
+  }`;
 
   let html = baseHtml.replace(
     /<a href="\/analysis" class="cta-button"/g,

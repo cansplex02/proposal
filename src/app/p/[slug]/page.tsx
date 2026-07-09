@@ -44,13 +44,15 @@ export default async function ClientProposalPage({
 }: Props) {
   const { slug } = await params;
   const { preview } = await searchParams;
-  const report = await loadReportForView(slug, preview === "1");
+  const isPreview = preview === "1";
+  const report = await loadReportForView(slug, isPreview);
   if (!report) notFound();
 
   const baseHtml = loadHtmlFile("proposal-body.html");
   const html = buildClientProposalHtml(baseHtml, {
     slug,
     clinicName: report.clinicName,
+    preview: isPreview,
   });
   const script = loadScriptFile("proposal-script.js");
 
