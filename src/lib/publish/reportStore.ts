@@ -119,7 +119,13 @@ export async function publishReport(
   slug: string,
   inline?: AnalysisReport | null
 ): Promise<AnalysisReport> {
-  const draft = await ensureDraftReport(slug, inline);
+  // inline이 주어지면 메모리의 최신본을 그대로 발행한다.
+  // Blob 재조회는 쓰기 직후 전파 지연으로 옛 버전을 읽어
+  // 방금 저장한 수정 내용을 되돌릴 수 있으므로 피한다.
+  const draft =
+    inline && inline.slug === slug
+      ? inline
+      : await ensureDraftReport(slug, inline);
   const publishedAt = new Date().toISOString();
   const published: AnalysisReport = {
     ...draft,

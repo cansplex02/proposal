@@ -155,7 +155,7 @@ export async function PATCH(req: Request, { params }: Props) {
 
     if (report.publish?.status === "published") {
 
-      report = await publishReport(slug);
+      report = await publishReport(slug, report);
 
     }
 
