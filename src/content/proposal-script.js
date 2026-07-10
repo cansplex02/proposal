@@ -254,3 +254,15 @@ document.documentElement.classList.add('js-anim');
     window.addEventListener('resize', onResize);
     window.__proposalScrollTeardown = teardown;
   })();
+
+// ===== 케이스 블록 클릭 → 실제 AI 대화 링크 열기 =====
+  (function() {
+    var blocks = document.querySelectorAll('.case-block[data-case-link]');
+    blocks.forEach(function(block) {
+      var url = block.getAttribute('data-case-link');
+      if (!url) return;
+      block.addEventListener('click', function() {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      });
+    });
+  })();
